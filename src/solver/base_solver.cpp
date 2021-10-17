@@ -2,27 +2,35 @@
 // Created by ljn on 20-3-10.
 //
 
-#include "solver/solver.hpp"
+#include "solver/base_solver.hpp"
 #include "data_struct/reference_path.hpp"
 #include "data_struct/data_struct.hpp"
+#include "config/planning_flags.hpp"
+#include "data_struct/vehicle_state_frenet.hpp"
+#include "tools/tools.hpp"
 
 namespace PathOptimizationNS {
 
-OsqpSolver::OsqpSolver(std::shared_ptr<ReferencePath> reference_path,
+BaseSolver::BaseSolver(std::shared_ptr<ReferencePath> reference_path,
                        std::shared_ptr<VehicleState> vehicle_state) :
-    horizon_(reference_path->getSize()),
+    n_(reference_path->getSize()),
     reference_path_(reference_path),
     vehicle_state_(vehicle_state),
     reference_interval_(0.0) {
+    state_size_ = 3 * n_;
+    control_size_ = n_ - 1;
+    slack_size_ = 2 * n_;
+    vars_size_ = state_size_ + control_size_ + slack_size_;
+    cons_size_ = 6 * n_ + 2;
     // Check some of the reference states to get the interval.
     const int check_num = 10;
-    for (int i = 1; i < horizon_ && i < check_num; ++i) {
+    for (int i = 1; i < n_ && i < check_num; ++i) {
         reference_interval_ = 
             std::max(reference_interval_, reference_path_->getReferenceStates()[i].s - reference_path_->getReferenceStates()[i - 1].s);
     }
 }
 
-std::unique_ptr<OsqpSolver> OsqpSolver::create(std::string &type,
+std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,
                                                std::shared_ptr<ReferencePath> reference_path,
                                                std::shared_ptr<VehicleState> vehicle_state) {
     // if (type == "K") {
@@ -37,22 +45,22 @@ std::unique_ptr<OsqpSolver> OsqpSolver::create(std::string &type,
     // }
 }
 
-bool OsqpSolver::solve(std::vector<PathOptimizationNS::State> *optimized_path) {
+bool BaseSolver::solve(std::vector<PathOptimizationNS::State> *optimized_path) {
     const auto &ref_states = reference_path_->getReferenceStates();
     solver_.settings()->setVerbosity(false);
     solver_.settings()->setWarmStart(true);
-    solver_.data()->setNumberOfVariables(num_of_variables_);
-    solver_.data()->setNumberOfConstraints(num_of_constraints_);
+    solver_.data()->setNumberOfVariables(vars_size_);
+    solver_.data()->setNumberOfConstraints(cons_size_);
     // Allocate QP problem matrices and vectors.
     Eigen::SparseMatrix<double> hessian;
-    Eigen::VectorXd gradient = Eigen::VectorXd::Zero(num_of_variables_);
+    Eigen::VectorXd gradient = Eigen::VectorXd::Zero(vars_size_);
     Eigen::SparseMatrix<double> linearMatrix;
     Eigen::VectorXd lowerBound;
     Eigen::VectorXd upperBound;
     // Set Hessian matrix.
-    setHessianMatrix(&hessian);
+    setCost(&hessian);
     // Set state transition matrix, constraint matrix and bound vector.
-    setConstraintMatrix(
+    setConstraints(
         &linearMatrix,
         &lowerBound,
         &upperBound);
@@ -68,6 +76,145 @@ bool OsqpSolver::solve(std::vector<PathOptimizationNS::State> *optimized_path) {
     const auto &QPSolution = solver_.getSolution();
     getOptimizedPath(QPSolution, optimized_path);
     return true;
+}
+
+void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
+    Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
+    const auto weight_l = 0.01;
+    const auto weight_kappa = 1.0;
+    const auto weight_dkappa = 100.0;
+    const auto weight_slack = 20.0;
+    for (size_t i = 0; i < n_; ++i) {
+        hessian(3 * i, 3 * i) += weight_l;
+        hessian(3 * i + 2, 3 * i + 2) += weight_kappa;
+        hessian(state_size_ + control_size_ + 2 * i, state_size_ + control_size_ + 2 * i)
+            += weight_slack;
+        hessian(state_size_ + control_size_ + 2 * i + 1, state_size_ + control_size_ + 2 * i + 1)
+            += weight_slack;
+        if (i != n_ - 1) {
+            hessian(state_size_ + i, state_size_ + i) += weight_dkappa;
+        }
+    }
+    *matrix_h = hessian.sparseView();
+}
+
+void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
+                                Eigen::VectorXd *lower_bound,
+                                Eigen::VectorXd *upper_bound) const {
+    const auto &ref_states = reference_path_->getReferenceStates();
+    const auto trans_idx = 0;
+    const auto kappa_idx = trans_idx + 3 * n_;
+    const auto collision_idx = kappa_idx + n_;
+    const auto end_state_idx = collision_idx + 2 * n_;
+    Eigen::MatrixXd cons = Eigen::MatrixXd::Zero(cons_size_, vars_size_);
+    // Set transition part. Ax + Bu + C = 0.
+    for (size_t i = 0; i != state_size_; ++i) {
+        cons(i, i) = -1;
+    }
+    Eigen::Matrix3d a(Eigen::Matrix3d::Zero());
+    a(0, 1) = 1;
+    a(1, 2) = 1;
+    Eigen::Matrix<double, 3, 1> b(Eigen::MatrixXd::Constant(3, 1, 0));
+    b(2, 0) = 1;
+    std::vector<Eigen::MatrixXd> c_list;
+    for (size_t i = 0; i != n_ - 1; ++i) {
+        const auto ref_k = ref_states[i].k;
+        const auto ds = ref_states[i + 1].s - ref_states[i].s;
+        const auto ref_kp = (ref_states[i + 1].k - ref_k) / ds;
+        a(1, 0) = -pow(ref_k, 2);
+        auto A = a * ds + Eigen::Matrix3d::Identity();
+        auto B = b * ds;
+        cons.block(3 * (i + 1), 3 * i, 3, 3) = A;
+        cons.block(3 * (i + 1), state_size_ + i, 3, 1) = B;
+        Eigen::Matrix<double, 3, 1> c, ref_state;
+        c << 0, 0, ref_kp;
+        ref_state << 0, 0, ref_k;
+        c_list.emplace_back(ds * (c - a * ref_state - b * ref_kp));
+    }
+    // Kappa.
+    for (size_t i = 0; i < n_; ++i) {
+        cons(kappa_idx + i, 3 * i + 2) = 1;
+    }
+    // Collision.
+    Eigen::Matrix<double, 2, 2> collision_coeff;
+    collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length;
+    for (size_t i = 0; i < n_; ++i) {
+        cons.block(collision_idx + 2 * i, 3 * i, 2, 2) = collision_coeff;
+        cons(collision_idx + 2 * i, state_size_ + control_size_ + 2 * i) = 1;
+        cons(collision_idx + 2 * i + 1, state_size_ + control_size_ + 2 * i + 1) = 1;
+    }
+    // End state.
+    cons(end_state_idx, state_size_ - 3) = 1; // end l
+    cons(end_state_idx + 1, state_size_ - 2) = 1; // end ephi
+    *matrix_constraints = cons.sparseView();
+
+    // Set bounds.
+    // Transition.
+    *lower_bound = Eigen::MatrixXd::Zero(cons_size_, 1);
+    *upper_bound = Eigen::MatrixXd::Zero(cons_size_, 1);
+    Eigen::Matrix<double, 3, 1> x0;
+    const auto init_error = vehicle_state_->getInitError();
+    x0 << init_error[0], init_error[1], vehicle_state_->getStartState().k;
+    lower_bound->block(0, 0, 3, 1) = -x0;
+    upper_bound->block(0, 0, 3, 1) = -x0;
+    for (size_t i = 0; i < n_ - 1; ++i) {
+        lower_bound->block(3 * (i + 1), 0, 3, 1) = -c_list[i];
+        upper_bound->block(3 * (i + 1), 0, 3, 1) = -c_list[i];
+    }
+    // Kappa.
+    for (size_t i = 0; i < n_; ++i) {
+        (*lower_bound)(kappa_idx + i) = -tan(FLAGS_max_steering_angle) / FLAGS_wheel_base;
+        (*upper_bound)(kappa_idx + i) = tan(FLAGS_max_steering_angle) / FLAGS_wheel_base;
+    }
+    // Collision.
+    const auto &bounds = reference_path_->getBounds();
+    for (size_t i = 0; i < n_; ++i) {
+        const auto front_bounds = getSoftBounds(bounds[i].front.lb, bounds[i].front.ub, FLAGS_expected_safety_margin);
+        const auto rear_bounds = getSoftBounds(bounds[i].rear.lb, bounds[i].rear.ub, FLAGS_expected_safety_margin);
+        (*lower_bound)(collision_idx + 2 * i, 0) = front_bounds.first;
+        (*upper_bound)(collision_idx + 2 * i, 0) = front_bounds.second;
+        (*lower_bound)(collision_idx + 2 * i + 1, 0) = rear_bounds.first;
+        (*upper_bound)(collision_idx + 2 * i + 1, 0) = rear_bounds.second;
+    }
+    // End state.
+    (*lower_bound)(end_state_idx) = -1.0; //-OsqpEigen::INFTY;
+    (*upper_bound)(end_state_idx) = 1.0; //OsqpEigen::INFTY;
+    (*lower_bound)(end_state_idx + 1) = -OsqpEigen::INFTY;
+    (*upper_bound)(end_state_idx + 1) = OsqpEigen::INFTY;
+    if (FLAGS_constraint_end_heading) {
+        double end_psi = constrainAngle(vehicle_state_->getTargetState().heading - ref_states.back().heading);
+        if (end_psi < 70 * M_PI / 180) {
+            (*lower_bound)(end_state_idx + 1) = end_psi - 0.087; // 5 degree.
+            (*upper_bound)(end_state_idx + 1) = end_psi + 0.087;
+        }
+    }
+}
+
+void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
+                                  std::vector<PathOptimizationNS::State> *optimized_path) const {
+    CHECK_EQ(optimization_result.size(), vars_size_);
+    optimized_path->clear();
+    const auto &ref_states = reference_path_->getReferenceStates();
+    double tmp_s = 0;
+    for (size_t i = 0; i != n_; ++i) {
+        double angle = ref_states[i].heading;
+        double new_angle = constrainAngle(angle + M_PI_2);
+        double tmp_x = ref_states[i].x + optimization_result(3 * i) * cos(new_angle);
+        double tmp_y = ref_states[i].y + optimization_result(3 * i) * sin(new_angle);
+        double k = optimization_result(3 * i + 2);
+        if (i != 0) {
+            tmp_s += sqrt(pow(tmp_x - optimized_path->back().x, 2) + pow(tmp_y - optimized_path->back().y, 2));
+        }
+        optimized_path->emplace_back(tmp_x, tmp_y, angle + optimization_result(3 * i + 1), k, tmp_s);
+    }
+}
+
+std::pair<double, double> BaseSolver::getSoftBounds(double lb, double ub, double safety_margin) const {
+    const auto clearance = ub - lb;
+    static const auto min_clearance = 0.1;
+    auto remain_clearance = std::max(min_clearance, clearance - 2 * safety_margin);
+    auto shrink = std::max(0.0, (clearance - remain_clearance) / 2.0);
+    return std::make_pair(lb + shrink, ub - shrink);
 }
 
 }

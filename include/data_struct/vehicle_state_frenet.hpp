@@ -21,7 +21,7 @@ class VehicleState {
     const State &getStartState() const;
     const State &getTargetState() const;
     void setStartState(const State &state);
-    void setEndState(const State &state);
+    void setTargetState(const State &state);
     std::vector<double> getInitError() const;
     void setInitError(double init_offset, double init_heading_error);
 
@@ -29,7 +29,7 @@ class VehicleState {
     // Initial state.
     State *start_state_;
     // Target state.
-    State *end_state_;
+    State *target_state_;
     // Initial error with reference line.
     double initial_offset_{};
     double initial_heading_error_{};

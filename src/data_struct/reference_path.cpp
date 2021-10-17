@@ -63,7 +63,11 @@ void ReferencePath::updateBounds(const Map &map) {
 }
 
 bool ReferencePath::buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger) {
-    reference_path_impl_->buildReferenceFromSpline(delta_s_smaller, delta_s_larger);
+    return reference_path_impl_->buildReferenceFromSpline(delta_s_smaller, delta_s_larger);
+}
+
+bool ReferencePath::buildReferenceFromStates(const std::vector<PathOptimizationNS::State> &states) {
+    return reference_path_impl_->buildReferenceFromStates(states);
 }
 
 void ReferencePath::setSpline(const PathOptimizationNS::tk::spline &x_s,

@@ -170,7 +170,7 @@ bool TensionSmoother::ipoptSmooth(const std::vector<double> &x_list,
     result_y_list->clear();
     double tmp_s = 0;
     for (size_t i = 0; i != n_vars; ++i) {
-        double new_angle = constraintAngle(angle_list[i] + M_PI_2);
+        double new_angle = constrainAngle(angle_list[i] + M_PI_2);
         double tmp_x = x_list[i] + solution.x[i] * cos(new_angle);
         double tmp_y = y_list[i] + solution.x[i] * sin(new_angle);
         result_x_list->emplace_back(tmp_x);

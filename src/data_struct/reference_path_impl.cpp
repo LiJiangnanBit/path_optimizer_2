@@ -200,8 +200,8 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
     double left_bound = 0;
     double right_bound = 0;
     double delta_s = 0.5;
-    double left_angle = constraintAngle(state.heading + M_PI_2);
-    double right_angle = constraintAngle(state.heading - M_PI_2);
+    double left_angle = constrainAngle(state.heading + M_PI_2);
+    double right_angle = constrainAngle(state.heading - M_PI_2);
 
     auto n = static_cast<size_t >(5.0 / delta_s);
     // Check if the original position is collision free.
@@ -354,6 +354,11 @@ bool ReferencePathImpl::buildReferenceFromSpline(double delta_s_smaller, double 
         } else tmp_s += delta_s_larger;
     }
     return true;
+}
+
+bool ReferencePathImpl::buildReferenceFromStates(const std::vector<PathOptimizationNS::State> &states) {
+    reference_states_ = states;
+    max_s_ = states.back().s;
 }
 
 }

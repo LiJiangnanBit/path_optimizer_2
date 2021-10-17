@@ -129,8 +129,8 @@ void ReferencePathSmoother::calculateCostAt(std::vector<std::vector<DpPoint>> &s
         if (!pre_point.is_feasible) continue;
         if (fabs(pre_point.l - point.l) > (point.s - pre_point.s)) continue;
         double direction = atan2(point.y - pre_point.y, point.x - pre_point.x);
-        double edge_cost = fabs(constraintAngle(direction - pre_point.dir)) / M_PI_2 * weight_angle_change
-            + fabs(constraintAngle(direction - point.heading)) / M_PI_2 * weight_ref_angle_diff;
+        double edge_cost = fabs(constrainAngle(direction - pre_point.dir)) / M_PI_2 * weight_angle_change
+            + fabs(constrainAngle(direction - point.heading)) / M_PI_2 * weight_ref_angle_diff;
         double total_cost = self_cost + edge_cost + pre_point.cost;
         if (total_cost < min_cost) {
             min_cost = total_cost;

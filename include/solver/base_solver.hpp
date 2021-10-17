@@ -35,22 +35,27 @@ class BaseSolver {
 
  private:
     // Set Matrices for osqp solver.
-    virtual void setHessianMatrix(Eigen::SparseMatrix<double> *matrix_h) const;
+    virtual void setCost(Eigen::SparseMatrix<double> *matrix_h) const;
 
-    virtual void setConstraintMatrix(Eigen::SparseMatrix<double> *matrix_constraints,
-                                     Eigen::VectorXd *lower_bound,
-                                     Eigen::VectorXd *upper_bound) const;
+    virtual void setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
+                                Eigen::VectorXd *lower_bound,
+                                Eigen::VectorXd *upper_bound) const;
     virtual void getOptimizedPath(const Eigen::VectorXd &optimization_result,
                                   std::vector<State> *optimized_path) const;
+    std::pair<double, double> getSoftBounds(double lb, double ub, double safety_margin) const;
 
  protected:
-    const size_t horizon_{};
+    // Num of knots.
+    const size_t n_{};
+    size_t state_size_{};
+    size_t control_size_{};
+    size_t slack_size_{};
+    size_t vars_size_{};
+    size_t cons_size_{};
     std::shared_ptr<ReferencePath> reference_path_;
     std::shared_ptr<VehicleState> vehicle_state_;
     OsqpEigen::Solver solver_;
     double reference_interval_;
-    int num_of_variables_, num_of_constraints_;
-
 };
 
 }

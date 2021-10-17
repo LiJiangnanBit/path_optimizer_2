@@ -22,13 +22,13 @@ class State;
 
 // Set angle to -pi ~ pi
 template<typename T>
-T constraintAngle(T angle) {
+T constrainAngle(T angle) {
     if (angle > M_PI) {
         angle -= 2 * M_PI;
-        return constraintAngle(angle);
+        return constrainAngle(angle);
     } else if (angle < -M_PI) {
         angle += 2 * M_PI;
-        return constraintAngle(angle);
+        return constrainAngle(angle);
     } else {
         return angle;
     }

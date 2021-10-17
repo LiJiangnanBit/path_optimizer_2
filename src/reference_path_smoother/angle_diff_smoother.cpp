@@ -162,7 +162,7 @@ bool AngleDiffSmoother::smooth(std::shared_ptr<PathOptimizationNS::ReferencePath
     double tmp_s = 0;
     for (size_t i = 0; i != N; i++) {
         double length_on_ref_path = s_list[i];
-        double new_angle = constraintAngle(angle_list[i] + M_PI_2);
+        double new_angle = constrainAngle(angle_list[i] + M_PI_2);
         double tmp_x = raw_x_s(length_on_ref_path) + solution.x[i] * cos(new_angle);
         double tmp_y = raw_y_s(length_on_ref_path) + solution.x[i] * sin(new_angle);
         result_x_list.emplace_back(tmp_x);

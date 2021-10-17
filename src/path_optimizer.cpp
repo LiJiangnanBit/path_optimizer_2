@@ -82,7 +82,7 @@ void PathOptimizer::processInitState() {
     // first point. So the distance here is simply the initial offset.
     double min_distance = distance(vehicle_state_->getStartState(), init_point);
     double initial_offset = first_point_local.y < 0.0 ? min_distance : -min_distance;
-    double initial_heading_error = constraintAngle(vehicle_state_->getStartState().heading - init_point.heading);
+    double initial_heading_error = constrainAngle(vehicle_state_->getStartState().heading - init_point.heading);
     vehicle_state_->setInitError(initial_offset, initial_heading_error);
 }
 
@@ -126,14 +126,30 @@ bool PathOptimizer::processReferencePath() {
 bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
     CHECK_NOTNULL(final_path);
     final_path->clear();
-    static const size_t max_iter_num = 5;
+    // TODO: use config.
+    static const size_t max_iter_num = 2;
     for (size_t i = 0; i < max_iter_num; ++i) {
         BaseSolver solver(reference_path_, vehicle_state_);
-        solver.solve(final_path);
-        // Check feasiblility.
-        
-    }
+        if (!solver.solve(final_path)) {
+            return false;
+        }
+        // Check convergence.
+        auto is_converged = true;
+        if (/*is_converged || (i > 0 && true *//*no collision*//*)*/ false) {
 
+            break;
+//        } else if (i == max_iter_num - 1) {
+//            // Hard constraints.
+
+        } else {
+            // Update ref path.
+            reference_path_->buildReferenceFromStates(*final_path);
+            reference_path_->updateBounds(*grid_map_);
+            vehicle_state_->setStartState(final_path->front());
+            vehicle_state_->setTargetState(final_path->back());
+            vehicle_state_->setInitError(0.0, 0.0);
+        }
+    }
     return true;
 }
 
