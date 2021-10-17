@@ -16,7 +16,7 @@
 #include "tools/collosion_checker.hpp"
 #include "tools/Map.hpp"
 #include "tools/spline.h"
-//#include "solver/solver.hpp"
+#include "solver/base_solver.hpp"
 #include "tinyspline_ros/tinysplinecpp.h"
 #include "reference_path_smoother/angle_diff_smoother.hpp"
 #include "reference_path_smoother/tension_smoother.hpp"
@@ -124,24 +124,16 @@ bool PathOptimizer::processReferencePath() {
 }
 
 bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
-    // Solve problem.
-//    auto solver =
-//        OsqpSolver::create(FLAGS_optimization_method, *reference_path_, *vehicle_state_, reference_path_->getSize());
-//    if (solver && !solver->solve(final_path)) {
-//        LOG(ERROR) << "QP failed.";
-//        return false;
-//    }
-//
-//    auto s = 0.0;
-//    for (auto iter = final_path->begin(); iter != final_path->end(); ++iter) {
-//        if (iter != final_path->begin()) s += distance(*(iter - 1), *iter);
-//        iter->s = s;
-//        if (FLAGS_enable_collision_check && !collision_checker_->isSingleStateCollisionFreeImproved(*iter)) {
-//            final_path->erase(iter, final_path->end());
-//            LOG(ERROR) << "collision check failed at " << final_path->back().s << "m.";
-//            return final_path->back().s >= 20;
-//        }
-//    }
+    CHECK_NOTNULL(final_path);
+    final_path->clear();
+    static const size_t max_iter_num = 5;
+    for (size_t i = 0; i < max_iter_num; ++i) {
+        BaseSolver solver(reference_path_, vehicle_state_);
+        solver.solve(final_path);
+        // Check feasiblility.
+        
+    }
+
     return true;
 }
 

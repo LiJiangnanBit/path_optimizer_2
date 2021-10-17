@@ -51,7 +51,7 @@ add_library(${PROJECT_NAME}
         src/reference_path_smoother/reference_path_smoother.cpp
         src/tools/Map.cpp
         src/tools/car_geometry.cpp
-#        src/solver/solver.cpp
+        src/solver/base_solver.cpp
 #        src/solver/solver_kp_as_input.cpp
 #        src/solver/solver_kp_as_input_constrained.cpp
         src/data_struct/date_struct.cpp
