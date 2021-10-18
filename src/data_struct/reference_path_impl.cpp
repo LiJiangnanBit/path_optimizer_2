@@ -236,11 +236,11 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
     } else {
         DLOG(INFO) << "Using relative position to determine the direction to expand.";
         // Use position to determine the direction.
-        auto closest_point{getProjection(*original_x_s_,
-                                         *original_y_s_,
+        auto closest_point{getProjection(*x_s_,
+                                         *y_s_,
                                          state.x,
                                          state.y,
-                                         original_max_s_)};
+                                         max_s_)};
         auto local_view{global2Local(state, closest_point)};
         DLOG(INFO) << "closest point: " << closest_point.x << ", " << closest_point.y << "\n"
                    << "state: " << state.x << ", " << state.y;

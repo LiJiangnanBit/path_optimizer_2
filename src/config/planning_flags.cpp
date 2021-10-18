@@ -13,8 +13,8 @@ DEFINE_double(car_length, 4.9, "");
 
 DEFINE_double(safety_margin, 0.0, "mandatory safety margin");
 
-DEFINE_double(circle_radius, sqrt(pow(FLAGS_car_length / 8, 2) + pow(FLAGS_car_width / 2, 2)) + FLAGS_safety_margin,
-    "radius of covering circles");
+DEFINE_double(circle_radius, FLAGS_car_width / 2.0 + FLAGS_safety_margin,
+    "");
 
 DEFINE_double(wheel_base, 2.85, "wheel base");
 

@@ -85,6 +85,12 @@ State getProjection(const tk::spline &xs,
         }
         tmp_s += grid;
     }
+    State end_state(xs(max_s), ys(max_s), getHeading(xs, ys, max_s));
+    end_state.s = max_s;
+    auto max_s_distance = distance(end_state, target_state);
+    if (max_s_distance < min_dis) {
+        return end_state;
+    }
     // Newton's method
     double cur_s = min_dis_s;
     double prev_s = min_dis_s;

@@ -81,9 +81,9 @@ bool BaseSolver::solve(std::vector<PathOptimizationNS::State> *optimized_path) {
 void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
     Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
     const auto weight_l = 0.01;
-    const auto weight_kappa = 1.0;
+    const auto weight_kappa = 20.0;
     const auto weight_dkappa = 100.0;
-    const auto weight_slack = 20.0;
+    const auto weight_slack = 500.0;
     for (size_t i = 0; i < n_; ++i) {
         hessian(3 * i, 3 * i) += weight_l;
         hessian(3 * i + 2, 3 * i + 2) += weight_kappa;
@@ -205,7 +205,7 @@ void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
         if (i != 0) {
             tmp_s += sqrt(pow(tmp_x - optimized_path->back().x, 2) + pow(tmp_y - optimized_path->back().y, 2));
         }
-        optimized_path->emplace_back(tmp_x, tmp_y, angle + optimization_result(3 * i + 1), k, tmp_s);
+        optimized_path->emplace_back(tmp_x, tmp_y, constrainAngle(angle + optimization_result(3 * i + 1)), k, tmp_s);
     }
 }
 

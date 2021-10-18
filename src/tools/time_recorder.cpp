@@ -3,6 +3,7 @@
 //
 #include "tools/time_recorder.h"
 #include "tools/tools.hpp"
+#include "glog/logging.h"
 
 namespace PathOptimizationNS {
 
