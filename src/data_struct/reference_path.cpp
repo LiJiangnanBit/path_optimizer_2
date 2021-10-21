@@ -70,6 +70,10 @@ bool ReferencePath::buildReferenceFromStates(const std::vector<PathOptimizationN
     return reference_path_impl_->buildReferenceFromStates(states);
 }
 
+bool ReferencePath::isBlocked() const {
+    return reference_path_impl_->isBlocked();
+}
+
 void ReferencePath::setSpline(const PathOptimizationNS::tk::spline &x_s,
                               const PathOptimizationNS::tk::spline &y_s,
                               double max_s) {

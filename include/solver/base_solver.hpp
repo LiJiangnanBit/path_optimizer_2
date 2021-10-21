@@ -23,7 +23,9 @@ class BaseSolver {
     BaseSolver() = delete;
 
     BaseSolver(std::shared_ptr<ReferencePath> reference_path,
-               std::shared_ptr<VehicleState> vehicle_state);
+               std::shared_ptr<VehicleState> vehicle_state,
+               int iter_num,
+               bool enable_hard_constraint);
 
     virtual ~BaseSolver() = default;
 
@@ -46,6 +48,8 @@ class BaseSolver {
 
  protected:
     // Num of knots.
+    const int iter_num_{};
+    bool enable_hard_constraint_{};
     const size_t n_{};
     size_t state_size_{};
     size_t control_size_{};

@@ -39,6 +39,7 @@ class ReferencePath {
     // Calculate reference_states_ from x_s_ and y_s_, given delta s.
     bool buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger);
     bool buildReferenceFromStates(const std::vector<PathOptimizationNS::State> &states);
+    bool isBlocked() const;
  private:
     std::shared_ptr<ReferencePathImpl> reference_path_impl_;
 };

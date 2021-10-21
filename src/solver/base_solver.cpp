@@ -12,22 +12,19 @@
 namespace PathOptimizationNS {
 
 BaseSolver::BaseSolver(std::shared_ptr<ReferencePath> reference_path,
-                       std::shared_ptr<VehicleState> vehicle_state) :
+                       std::shared_ptr<VehicleState> vehicle_state,
+                       int iter_num,
+                       bool enable_hard_constraint) :
+    iter_num_(iter_num),
+    enable_hard_constraint_(enable_hard_constraint),
     n_(reference_path->getSize()),
     reference_path_(reference_path),
-    vehicle_state_(vehicle_state),
-    reference_interval_(0.0) {
+    vehicle_state_(vehicle_state) {
     state_size_ = 3 * n_;
     control_size_ = n_ - 1;
     slack_size_ = 2 * n_;
     vars_size_ = state_size_ + control_size_ + slack_size_;
-    cons_size_ = 6 * n_ + 2;
-    // Check some of the reference states to get the interval.
-    const int check_num = 10;
-    for (int i = 1; i < n_ && i < check_num; ++i) {
-        reference_interval_ = 
-            std::max(reference_interval_, reference_path_->getReferenceStates()[i].s - reference_path_->getReferenceStates()[i - 1].s);
-    }
+    cons_size_ = 6 * n_ + 2 + 2 * n_ * static_cast<int>(enable_hard_constraint);
 }
 
 std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,
@@ -80,10 +77,10 @@ bool BaseSolver::solve(std::vector<PathOptimizationNS::State> *optimized_path) {
 
 void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
     Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
-    const auto weight_l = 0.01;
+    const auto weight_l = 0.1;
     const auto weight_kappa = 20.0;
     const auto weight_dkappa = 100.0;
-    const auto weight_slack = 500.0;
+    const auto weight_slack = 10;// 1000.0 - 200 * iter_num_;
     for (size_t i = 0; i < n_; ++i) {
         hessian(3 * i, 3 * i) += weight_l;
         hessian(3 * i + 2, 3 * i + 2) += weight_kappa;
@@ -106,6 +103,7 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     const auto kappa_idx = trans_idx + 3 * n_;
     const auto collision_idx = kappa_idx + n_;
     const auto end_state_idx = collision_idx + 2 * n_;
+    const auto hard_constraint_idx = end_state_idx + 2;
     Eigen::MatrixXd cons = Eigen::MatrixXd::Zero(cons_size_, vars_size_);
     // Set transition part. Ax + Bu + C = 0.
     for (size_t i = 0; i != state_size_; ++i) {
@@ -138,14 +136,21 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     // Collision.
     Eigen::Matrix<double, 2, 2> collision_coeff;
     collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length;
+    Eigen::Matrix<double, 2, 2> slack_coeff;
+    slack_coeff << 1, 0, 0, 1;
     for (size_t i = 0; i < n_; ++i) {
         cons.block(collision_idx + 2 * i, 3 * i, 2, 2) = collision_coeff;
-        cons(collision_idx + 2 * i, state_size_ + control_size_ + 2 * i) = 1;
-        cons(collision_idx + 2 * i + 1, state_size_ + control_size_ + 2 * i + 1) = 1;
+        cons.block(collision_idx + 2 * i, state_size_ + control_size_ + 2 * i, 2, 2) = slack_coeff;
     }
     // End state.
     cons(end_state_idx, state_size_ - 3) = 1; // end l
     cons(end_state_idx + 1, state_size_ - 2) = 1; // end ephi
+    // Hard constraint.
+    if (enable_hard_constraint_) {
+        for (size_t i = 0; i < n_; ++i) {
+            cons.block(hard_constraint_idx + 2 * i, 3 * i, 2, 2) = collision_coeff;
+        }
+    }
     *matrix_constraints = cons.sparseView();
 
     // Set bounds.
@@ -181,11 +186,19 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     (*upper_bound)(end_state_idx) = 1.0; //OsqpEigen::INFTY;
     (*lower_bound)(end_state_idx + 1) = -OsqpEigen::INFTY;
     (*upper_bound)(end_state_idx + 1) = OsqpEigen::INFTY;
-    if (FLAGS_constraint_end_heading) {
+    if (FLAGS_constraint_end_heading && !reference_path_->isBlocked()) {
         double end_psi = constrainAngle(vehicle_state_->getTargetState().heading - ref_states.back().heading);
         if (end_psi < 70 * M_PI / 180) {
             (*lower_bound)(end_state_idx + 1) = end_psi - 0.087; // 5 degree.
             (*upper_bound)(end_state_idx + 1) = end_psi + 0.087;
+        }
+    }
+    if (enable_hard_constraint_) {
+        for (size_t i = 0; i < n_; ++i) {
+            (*lower_bound)(hard_constraint_idx + 2 * i, 0) = bounds[i].front.lb;
+            (*upper_bound)(hard_constraint_idx + 2 * i, 0) = bounds[i].front.ub;
+            (*lower_bound)(hard_constraint_idx + 2 * i + 1, 0) = bounds[i].rear.lb;
+            (*upper_bound)(hard_constraint_idx + 2 * i + 1, 0) = bounds[i].rear.ub;
         }
     }
 }

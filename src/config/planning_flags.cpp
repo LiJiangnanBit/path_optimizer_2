@@ -9,18 +9,17 @@
 /////
 DEFINE_double(car_width, 2.0, "");
 
-DEFINE_double(car_length, 4.9, "");
+DEFINE_double(car_length, 4.5, "");
 
-DEFINE_double(safety_margin, 0.0, "mandatory safety margin");
+DEFINE_double(safety_margin, 0.1, "mandatory safety margin");
 
-DEFINE_double(circle_radius, FLAGS_car_width / 2.0 + FLAGS_safety_margin,
-    "");
+DEFINE_double(circle_radius, 1.1, "");
 
-DEFINE_double(wheel_base, 2.85, "wheel base");
+DEFINE_double(wheel_base, 2.5, "wheel base");
 
 DEFINE_double(rear_axle_to_center, 1.45, "distance from rear axle to vehicle center");
 
-DEFINE_double(rear_length, 1.0, "rear axle to rear edge");
+DEFINE_double(rear_length, -1.0, "rear axle to rear edge");
 
 DEFINE_double(front_length, 3.9, "rear axle to front edge");
 
@@ -32,7 +31,7 @@ DEFINE_double(d3, 1.0 / 8.0 * FLAGS_car_length + FLAGS_rear_axle_to_center, "dis
 
 DEFINE_double(d4, 3.0 / 8.0 * FLAGS_car_length + FLAGS_rear_axle_to_center, "distance from rear axle to circle 4");
 
-DEFINE_double(max_steering_angle, 30.0 * M_PI / 180.0, "");
+DEFINE_double(max_steering_angle, 35.0 * M_PI / 180.0, "");
 
 DEFINE_double(mu, 0.4, "friction param");
 

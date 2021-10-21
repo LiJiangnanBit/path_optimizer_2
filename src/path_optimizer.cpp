@@ -129,7 +129,7 @@ bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
     // TODO: use config.
     static const size_t max_iter_num = 2;
     for (size_t i = 0; i < max_iter_num; ++i) {
-        BaseSolver solver(reference_path_, vehicle_state_);
+        BaseSolver solver(reference_path_, vehicle_state_, i, i > 0);
         if (!solver.solve(final_path)) {
             return false;
         }
