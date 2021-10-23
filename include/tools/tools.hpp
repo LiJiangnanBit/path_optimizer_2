@@ -60,13 +60,36 @@ double distance(const State &p1, const State &p2);
 State local2Global(const State &reference, const State &target);
 State global2Local(const State &reference, const State &target);
 
+// Find the closest point on spline.
 State getProjection(const tk::spline &xs,
                     const tk::spline &ys,
-                    double x,
-                    double y,
+                    double target_x,
+                    double target_y,
                     double max_s,
-                    double start_s = 0);
+                    double start_s = 0.0);
 
+State getProjectionByNewton(const tk::spline &xs,
+                            const tk::spline &ys,
+                            double target_x,
+                            double target_y,
+                            double max_s,
+                            double hint_s);
+
+State getDirectionalProjection(const tk::spline &xs,
+                               const tk::spline &ys,
+                               double target_x,
+                               double target_y,
+                               double angle,
+                               double max_s,
+                               double start_s = 0.0);
+
+State getDirectionalProjectionByNewton(const tk::spline &xs,
+                                       const tk::spline &ys,
+                                       double target_x,
+                                       double target_y,
+                                       double angle,
+                                       double max_s,
+                                       double hint_s);
 }
 
 #endif //PATH_OPTIMIZER_INCLUDE_TOOLS_TOOLS_HPP_

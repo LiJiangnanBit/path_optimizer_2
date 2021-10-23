@@ -97,7 +97,7 @@ State ReferencePathImpl::getApproxState(const State &original_state, const State
     v1.y = actual_state.y - original_state.y;
     v2.x = x - original_state.x;
     v2.y = y - original_state.y;
-    double proj = (v1.x*v2.x + v1.y*v2.y) / std::max(0.001, sqrt(pow(v1.x,2) + pow(v1.y,2)));
+    double proj = (v1.x * v2.x + v1.y * v2.y) / std::max(0.001, sqrt(pow(v1.x, 2) + pow(v1.y, 2)));
     double move_dis = fabs(len) - proj;
     // Move.
     State ret;
@@ -118,21 +118,33 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
     for (const auto &state : reference_states_) {
         // Front and rear bounds.
         State front_center(state.x + FLAGS_front_length * cos(state.heading),
-               state.y + FLAGS_front_length * sin(state.heading),
-               state.heading);
+                           state.y + FLAGS_front_length * sin(state.heading),
+                           state.heading);
         State rear_center(state.x + FLAGS_rear_length * cos(state.heading),
-               state.y + FLAGS_rear_length * sin(state.heading),
-               state.heading);
-        auto front_center_projection = getApproxState(state, front_center, FLAGS_front_length);
-        auto rear_center_projection = getApproxState(state, rear_center, FLAGS_rear_length);
+                          state.y + FLAGS_rear_length * sin(state.heading),
+                          state.heading);
+        auto front_center_directional_projection = getDirectionalProjection(*x_s_,
+                                                                            *y_s_,
+                                                                            front_center.x,
+                                                                            front_center.y,
+                                                                            front_center.heading + M_PI_2,
+                                                                            state.s + 5.0,
+                                                                            state.s - 5.0);
+        auto rear_center_directional_projection = getDirectionalProjection(*x_s_,
+                                                                           *y_s_,
+                                                                           rear_center.x,
+                                                                           rear_center.y,
+                                                                           rear_center.heading + M_PI_2,
+                                                                           state.s + 5.0,
+                                                                           state.s - 5.0);
+
         // Calculate boundaries.
-        auto offset = 0.0;
-        auto front_bound = getClearanceWithDirectionStrict(front_center_projection, map);
-        offset = global2Local(front_center, front_center_projection).y;
+        auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map);
+        auto offset = global2Local(front_center, front_center_directional_projection).y;
         front_bound[0] += offset;
         front_bound[1] += offset;
-        auto rear_bound = getClearanceWithDirectionStrict(rear_center_projection, map);
-        offset = global2Local(rear_center, rear_center_projection).y;
+        auto rear_bound = getClearanceWithDirectionStrict(rear_center_directional_projection, map);
+        offset = global2Local(rear_center, rear_center_directional_projection).y;
         rear_bound[0] += offset;
         rear_bound[1] += offset;
         vehicle_state_bound.front.set(front_bound, front_center);

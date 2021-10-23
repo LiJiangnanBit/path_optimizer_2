@@ -32,6 +32,8 @@
 #include "tools/spline.h"
 #include "config/planning_flags.hpp"
 
+// TODO: this file is a mess.
+
 PathOptimizationNS::State start_state, end_state;
 std::vector<PathOptimizationNS::State> reference_path_plot;
 PathOptimizationNS::ReferencePath reference_path_opt;
@@ -83,7 +85,7 @@ int main(int argc, char **argv) {
     }
 
     google::InitGoogleLogging(argv[0]);
-    FLAGS_colorlogtostderr=true;
+    FLAGS_colorlogtostderr = true;
     FLAGS_stderrthreshold = google::INFO;
     FLAGS_log_dir = log_dir;
     FLAGS_logbufsecs = 0;
@@ -189,6 +191,7 @@ int main(int argc, char **argv) {
         // Calculate.
         std::vector<PathOptimizationNS::State> result_path, smoothed_reference_path, result_path_by_boxes;
         std::vector<std::vector<double>> a_star_display(3);
+        bool opt_ok = false;
         if (reference_rcv && start_state_rcv && end_state_rcv) {
 //            FLAGS_enable_searching = true;
 //            FLAGS_expected_safety_margin = 1.8;
@@ -213,7 +216,7 @@ int main(int argc, char **argv) {
 //            FLAGS_output_spacing = 0.3;
             if (path_optimizer.solve(reference_path_plot, &result_path)) {
                 std::cout << "ok!" << std::endl;
-                
+                opt_ok = true;
                 smoothed_reference_path.clear();
                 reference_path_opt = path_optimizer.getReferencePath();
                 double s = 0;
@@ -373,6 +376,18 @@ int main(int argc, char **argv) {
         // Publish markers.
         markers.publish();
         LOG_EVERY_N(INFO, 20) << "map published.";
+
+        // Test projection function.
+//        if (opt_ok) {
+//            auto proj = PathOptimizationNS::getDirectionalProjectionByNewton(reference_path_opt.getXS(),
+//                                                                             reference_path_opt.getYS(),
+//                                                                             0.0,
+//                                                                             0.0,
+//                                                                             0.0,
+//                                                                             reference_path_opt.getLength(),
+//                                                                             2.0);
+//            std::cout << "proj x: " << proj.x << ", y: " << proj.y << ", s: " << proj.s << std::endl;
+//        }
 
         // Wait for next cycle.
         ros::spinOnce();

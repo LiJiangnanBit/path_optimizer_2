@@ -65,17 +65,17 @@ State global2Local(const State &reference, const State &target) {
 
 State getProjection(const tk::spline &xs,
                     const tk::spline &ys,
-                    double x,
-                    double y,
+                    double target_x,
+                    double target_y,
                     double max_s,
                     double start_s) {
     if (max_s <= start_s) {
         return State{xs(start_s), ys(start_s)};
     }
-    static const double grid = 0.5;
+    static const double grid = 1.0;
     double tmp_s = start_s, min_dis_s = start_s;
     auto min_dis = DBL_MAX;
-    State target_state{x, y};
+    State target_state{target_x, target_y};
     while (tmp_s <= max_s) {
         State state_on_spline{xs(tmp_s), ys(tmp_s)};
         double tmp_dis = distance(state_on_spline, target_state);
@@ -92,23 +92,96 @@ State getProjection(const tk::spline &xs,
         return end_state;
     }
     // Newton's method
-    double cur_s = min_dis_s;
-    double prev_s = min_dis_s;
+    return getProjectionByNewton(xs, ys, target_x, target_y, max_s, min_dis_s);
+}
+
+State getProjectionByNewton(const tk::spline &xs,
+                            const tk::spline &ys,
+                            double target_x,
+                            double target_y,
+                            double max_s,
+                            double hint_s) {
+    hint_s = std::min(hint_s, max_s);
+    double cur_s = hint_s;
+    double prev_s = hint_s;
     for (int i = 0; i < 20; ++i) {
-        double path_x = xs(cur_s);
-        double path_y = ys(cur_s);
+        double x = xs(cur_s);
+        double y = ys(cur_s);
         double dx = xs.deriv(1, cur_s);
         double dy = ys.deriv(1, cur_s);
         double ddx = xs.deriv(2, cur_s);
         double ddy = ys.deriv(2, cur_s);
         // Ignore coeff 2 in J and H.
-        double j = (path_x - x) * dx + (path_y - y) * dy;
-        double h = dx * dx + (path_x - x) * ddx + dy * dy + (path_y - y) * ddy;
+        double j = (x - target_x) * dx + (y - target_y) * dy;
+        double h = dx * dx + (x - target_x) * ddx + dy * dy + (y - target_y) * ddy;
         cur_s -= j / h;
         if (fabs(cur_s - prev_s) < 1e-5) break;
         prev_s = cur_s;
     }
-    
+
+    cur_s = std::min(cur_s, max_s);
+    State ret{xs(cur_s), ys(cur_s), getHeading(xs, ys, cur_s)};
+    ret.s = cur_s;
+    return ret;
+}
+
+State getDirectionalProjection(const tk::spline &xs,
+                               const tk::spline &ys,
+                               double target_x,
+                               double target_y,
+                               double angle,
+                               double max_s,
+                               double start_s) {
+    if (max_s <= start_s) {
+        return State{xs(start_s), ys(start_s)};
+    }
+    static const double grid = 2.0;
+    double tmp_s = start_s, min_dot_value_s = start_s;
+    double v1 = sin(angle);
+    double v2 = -cos(angle);
+    auto min_dot_value = DBL_MAX;
+    while (tmp_s <= max_s) {
+        State state_on_spline{xs(tmp_s), ys(tmp_s)};
+        double tmp_dot_value = fabs(v1 * (state_on_spline.x - target_x) + v2 * (state_on_spline.y - target_y));
+        if (tmp_dot_value < min_dot_value) {
+            tmp_dot_value = min_dot_value;
+            min_dot_value_s = tmp_s;
+        }
+        tmp_s += grid;
+    }
+    // Newton's method
+    return getDirectionalProjectionByNewton(xs, ys, target_x, target_y, angle, max_s, min_dot_value_s);
+}
+
+State getDirectionalProjectionByNewton(const tk::spline &xs,
+                                       const tk::spline &ys,
+                                       double target_x,
+                                       double target_y,
+                                       double angle,
+                                       double max_s,
+                                       double hint_s) {
+    hint_s = std::min(hint_s, max_s);
+    double cur_s = hint_s;
+    double prev_s = hint_s;
+    double v1 = sin(angle);
+    double v2 = -cos(angle);
+    for (int i = 0; i < 20; ++i) {
+        double x = xs(cur_s);
+        double y = ys(cur_s);
+        double dx = xs.deriv(1, cur_s);
+        double dy = ys.deriv(1, cur_s);
+        double ddx = xs.deriv(2, cur_s);
+        double ddy = ys.deriv(2, cur_s);
+        // Ignore coeff 2 in J and H.
+        double p1 = v1 * (x - target_x) + v2 * (y - target_y);
+        double p2 = v1 * dx + v2 * dy;
+        double j = p1 * p2;
+        double h = p1 * (v1 * ddx + v2 * ddy) + p2 * p2;
+        cur_s -= j / h;
+        if (fabs(cur_s - prev_s) < 1e-5) break;
+        prev_s = cur_s;
+    }
+
     cur_s = std::min(cur_s, max_s);
     State ret{xs(cur_s), ys(cur_s), getHeading(xs, ys, cur_s)};
     ret.s = cur_s;
