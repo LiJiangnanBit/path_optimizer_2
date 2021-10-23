@@ -127,7 +127,7 @@ bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
     CHECK_NOTNULL(final_path);
     final_path->clear();
     // TODO: use config.
-    static const size_t max_iter_num = 2;
+    static const size_t max_iter_num = 1;
     for (size_t i = 0; i < max_iter_num; ++i) {
         LOG(INFO) << "Iter " << i << " begins.";
         BaseSolver solver(reference_path_, vehicle_state_, i, i > 0);

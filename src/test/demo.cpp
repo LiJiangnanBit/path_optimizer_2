@@ -366,6 +366,37 @@ int main(int argc, char **argv) {
         }
         markers.append(block_state_marker);
 
+        // Plot bounds.
+        visualization_msgs::Marker front_bounds_marker =
+            markers.newSphereList(0.25, "front bounds", id++, ros_viz_tools::LIGHT_BLUE, marker_frame_id);
+        for (const auto &bound : reference_path_opt.getBounds()) {
+            const auto &front_bound = bound.front;
+            geometry_msgs::Point p;
+            p.x = front_bound.x + front_bound.lb * cos(front_bound.heading + M_PI_2);
+            p.y = front_bound.y + front_bound.lb * sin(front_bound.heading + M_PI_2);
+            p.z = 1.0;
+            front_bounds_marker.points.emplace_back(p);
+            p.x = front_bound.x + front_bound.ub * cos(front_bound.heading + M_PI_2);
+            p.y = front_bound.y + front_bound.ub * sin(front_bound.heading + M_PI_2);
+            front_bounds_marker.points.emplace_back(p);
+        }
+        markers.append(front_bounds_marker);
+
+        visualization_msgs::Marker rear_bounds_marker =
+            markers.newSphereList(0.25, "rear bounds", id++, ros_viz_tools::LIME_GREEN, marker_frame_id);
+        for (const auto &bound : reference_path_opt.getBounds()) {
+            const auto &rear_bound = bound.rear;
+            geometry_msgs::Point p;
+            p.x = rear_bound.x + rear_bound.lb * cos(rear_bound.heading + M_PI_2);
+            p.y = rear_bound.y + rear_bound.lb * sin(rear_bound.heading + M_PI_2);
+            p.z = 1.0;
+            rear_bounds_marker.points.emplace_back(p);
+            p.x = rear_bound.x + rear_bound.ub * cos(rear_bound.heading + M_PI_2);
+            p.y = rear_bound.y + rear_bound.ub * sin(rear_bound.heading + M_PI_2);
+            rear_bounds_marker.points.emplace_back(p);
+        }
+        markers.append(rear_bounds_marker);
+
         // Publish the grid_map.
         grid_map.setTimestamp(time.toNSec());
         nav_msgs::OccupancyGrid message;
