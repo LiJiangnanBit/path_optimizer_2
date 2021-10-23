@@ -186,7 +186,7 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     (*upper_bound)(end_state_idx) = 1.0; //OsqpEigen::INFTY;
     (*lower_bound)(end_state_idx + 1) = -OsqpEigen::INFTY;
     (*upper_bound)(end_state_idx + 1) = OsqpEigen::INFTY;
-    if (FLAGS_constraint_end_heading && !reference_path_->isBlocked()) {
+    if (FLAGS_constraint_end_heading && reference_path_->isBlocked() != nullptr) {
         double end_psi = constrainAngle(vehicle_state_->getTargetState().heading - ref_states.back().heading);
         if (end_psi < 70 * M_PI / 180) {
             (*lower_bound)(end_state_idx + 1) = end_psi - 0.087; // 5 degree.

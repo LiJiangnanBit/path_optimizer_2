@@ -45,7 +45,7 @@ class ReferencePathImpl {
     // Calculate reference_states_ from x_s_ and y_s_, given delta s.
     bool buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger);
     bool buildReferenceFromStates(const std::vector<State> &states);
-    bool isBlocked() const;
+    std::shared_ptr<VehicleStateBound> isBlocked() const;
 
  private:
     std::vector<double> getClearanceWithDirectionStrict(const PathOptimizationNS::State &state,
@@ -65,7 +65,8 @@ class ReferencePathImpl {
     std::vector<VehicleStateBound> bounds_;
     // To test updateBounds function;
     std::vector<std::tuple<State, double, double>> display_set_;
-    bool is_blocked_{};
+    // Debug.
+    std::shared_ptr<VehicleStateBound> blocked_bound_;
 };
 }
 

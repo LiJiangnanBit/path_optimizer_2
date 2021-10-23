@@ -16,8 +16,7 @@ ReferencePathImpl::ReferencePathImpl() :
     x_s_(new tk::spline),
     y_s_(new tk::spline),
     original_x_s_(new tk::spline),
-    original_y_s_(new tk::spline),
-    is_blocked_(false){}
+    original_y_s_(new tk::spline) {}
 
 const tk::spline &ReferencePathImpl::getXS() const {
     return *x_s_;
@@ -115,7 +114,6 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
         return;
     }
     bounds_.clear();
-    is_blocked_ = false;
     VehicleStateBound vehicle_state_bound;
     for (const auto &state : reference_states_) {
         // Front and rear bounds.
@@ -137,13 +135,13 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
         offset = global2Local(rear_center, rear_center_projection).y;
         rear_bound[0] += offset;
         rear_bound[1] += offset;
+        vehicle_state_bound.front.set(front_bound, front_center);
+        vehicle_state_bound.rear.set(rear_bound, rear_center);
         if (isEqual(front_bound[0], front_bound[1]) || isEqual(rear_bound[0], rear_bound[1])) {
             LOG(INFO) << "Path is blocked at s: " << state.s;
-            is_blocked_ = true;
+            blocked_bound_.reset(new VehicleStateBound(vehicle_state_bound));
             break;
         }
-        vehicle_state_bound.front = front_bound;
-        vehicle_state_bound.rear = rear_bound;
         bounds_.emplace_back(vehicle_state_bound);
     }
     if (reference_states_.size() != bounds_.size()) {
@@ -364,8 +362,8 @@ bool ReferencePathImpl::buildReferenceFromStates(const std::vector<PathOptimizat
     max_s_ = states.back().s;
 }
 
-bool ReferencePathImpl::isBlocked() const {
-    return is_blocked_;
+std::shared_ptr<VehicleStateBound> ReferencePathImpl::isBlocked() const {
+    return blocked_bound_;
 }
 
 }

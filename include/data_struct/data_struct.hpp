@@ -9,6 +9,7 @@
 #include <cfloat>
 
 namespace PathOptimizationNS {
+// TODO: 表示点的结构从统一的类继承。
 // Standard point struct.
 struct State {
     State() = default;

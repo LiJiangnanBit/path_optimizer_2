@@ -70,7 +70,7 @@ bool ReferencePath::buildReferenceFromStates(const std::vector<PathOptimizationN
     return reference_path_impl_->buildReferenceFromStates(states);
 }
 
-bool ReferencePath::isBlocked() const {
+std::shared_ptr<VehicleStateBound> ReferencePath::isBlocked() const {
     return reference_path_impl_->isBlocked();
 }
 

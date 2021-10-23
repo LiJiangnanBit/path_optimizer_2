@@ -33,20 +33,21 @@
 #include "config/planning_flags.hpp"
 
 PathOptimizationNS::State start_state, end_state;
-std::vector<PathOptimizationNS::State> reference_path;
+std::vector<PathOptimizationNS::State> reference_path_plot;
+PathOptimizationNS::ReferencePath reference_path_opt;
 //std::vector<std::tuple<PathOptimizationNS::State, double, double>> abnormal_bounds;
 bool start_state_rcv = false, end_state_rcv = false, reference_rcv = false;
 
 void referenceCb(const geometry_msgs::PointStampedConstPtr &p) {
     if (start_state_rcv && end_state_rcv) {
-        reference_path.clear();
+        reference_path_plot.clear();
     }
     PathOptimizationNS::State reference_point;
     reference_point.x = p->point.x;
     reference_point.y = p->point.y;
-    reference_path.emplace_back(reference_point);
+    reference_path_plot.emplace_back(reference_point);
     start_state_rcv = end_state_rcv = false;
-    reference_rcv = reference_path.size() >= 6;
+    reference_rcv = reference_path_plot.size() >= 6;
     std::cout << "received a reference point" << std::endl;
 }
 
@@ -135,11 +136,11 @@ int main(int argc, char **argv) {
         int id = 0;
 
         // Cancel at double click.
-        if (reference_path.size() >= 2) {
-            const auto &p1 = reference_path[reference_path.size() - 2];
-            const auto &p2 = reference_path.back();
+        if (reference_path_plot.size() >= 2) {
+            const auto &p1 = reference_path_plot[reference_path_plot.size() - 2];
+            const auto &p2 = reference_path_plot.back();
             if (distance(p1, p2) <= 0.001) {
-                reference_path.clear();
+                reference_path_plot.clear();
                 reference_rcv = false;
             }
         }
@@ -147,10 +148,10 @@ int main(int argc, char **argv) {
         // Visualize reference path selected by mouse.
         visualization_msgs::Marker reference_marker =
             markers.newSphereList(0.5, "reference point", id++, ros_viz_tools::RED, marker_frame_id);
-        for (size_t i = 0; i != reference_path.size(); ++i) {
+        for (size_t i = 0; i != reference_path_plot.size(); ++i) {
             geometry_msgs::Point p;
-            p.x = reference_path[i].x;
-            p.y = reference_path[i].y;
+            p.x = reference_path_plot[i].x;
+            p.y = reference_path_plot[i].y;
             p.z = 1.0;
             reference_marker.points.push_back(p);
         }
@@ -210,14 +211,14 @@ int main(int argc, char **argv) {
 //            FLAGS_enable_dynamic_segmentation = false;
 //            FLAGS_enable_raw_output = false;
 //            FLAGS_output_spacing = 0.3;
-            if (path_optimizer.solve(reference_path, &result_path)) {
+            if (path_optimizer.solve(reference_path_plot, &result_path)) {
                 std::cout << "ok!" << std::endl;
                 
                 smoothed_reference_path.clear();
-                const auto &reference = path_optimizer.getReferencePath();
+                reference_path_opt = path_optimizer.getReferencePath();
                 double s = 0;
-                while (s < reference.getLength()) {
-                    smoothed_reference_path.emplace_back(reference.getXS()(s), reference.getYS()(s));
+                while (s < reference_path_opt.getLength()) {
+                    smoothed_reference_path.emplace_back(reference_path_opt.getXS()(s), reference_path_opt.getYS()(s));
                     s += 0.5;
                 }
             }
@@ -344,6 +345,23 @@ int main(int argc, char **argv) {
             vehicle_geometry_marker.points.push_back(pp1);
         }
         markers.append(vehicle_geometry_marker);
+
+        visualization_msgs::Marker block_state_marker =
+            markers.newSphereList(0.45, "block state", id++, ros_viz_tools::PINK, marker_frame_id);
+        static std::vector<double> len_vec{FLAGS_rear_length, 0.0, FLAGS_front_length};
+        auto block_ptr = reference_path_opt.isBlocked();
+        LOG(INFO) << "block ptr " << (block_ptr != nullptr);
+        if (block_ptr) {
+            geometry_msgs::Point p;
+            p.x = block_ptr->front.x;
+            p.y = block_ptr->front.y;
+            p.z = 1.0;
+            block_state_marker.points.emplace_back(p);
+            p.x = block_ptr->rear.x;
+            p.y = block_ptr->rear.y;
+            block_state_marker.points.emplace_back(p);
+        }
+        markers.append(block_state_marker);
 
         // Publish the grid_map.
         grid_map.setTimestamp(time.toNSec());
