@@ -212,15 +212,16 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
     // TODO: too much repeated code!
     double left_bound = 0;
     double right_bound = 0;
-    double delta_s = 0.5;
+    double delta_s = 0.3;
     double left_angle = constrainAngle(state.heading + M_PI_2);
     double right_angle = constrainAngle(state.heading - M_PI_2);
+    static auto search_radius = 0.5;
 
-    auto n = static_cast<size_t >(5.0 / delta_s);
+    auto n = static_cast<size_t >(6.0 / delta_s);
     // Check if the original position is collision free.
     grid_map::Position original_position(state.x, state.y);
     auto original_clearance = map.getObstacleDistance(original_position);
-    if (original_clearance > FLAGS_circle_radius) {
+    if (original_clearance > search_radius) {
         // Normal case:
         double right_s = 0;
         for (size_t j = 0; j != n; ++j) {
@@ -229,7 +230,7 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
             double y = state.y + right_s * sin(right_angle);
             grid_map::Position new_position(x, y);
             double clearance = map.getObstacleDistance(new_position);
-            if (clearance < FLAGS_circle_radius) {
+            if (clearance < search_radius) {
                 break;
             }
         }
@@ -240,78 +241,81 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
             double y = state.y + left_s * sin(left_angle);
             grid_map::Position new_position(x, y);
             double clearance = map.getObstacleDistance(new_position);
-            if (clearance < FLAGS_circle_radius) {
+            if (clearance < search_radius) {
                 break;
             }
         }
         right_bound = -(right_s - delta_s);
         left_bound = left_s - delta_s;
     } else {
-        DLOG(INFO) << "Using relative position to determine the direction to expand.";
-        // Use position to determine the direction.
-        auto closest_point{getProjection(*x_s_,
-                                         *y_s_,
-                                         state.x,
-                                         state.y,
-                                         max_s_)};
-        auto local_view{global2Local(state, closest_point)};
-        DLOG(INFO) << "closest point: " << closest_point.x << ", " << closest_point.y << "\n"
-                   << "state: " << state.x << ", " << state.y;
-        if (local_view.y < 0) {
-            DLOG(INFO) << "Choose right.";
-            // Expand to the right:
-            double right_s = 0;
-            for (int j = 0; j != n; ++j) {
-                right_s += delta_s;
-                double x = state.x + right_s * cos(right_angle);
-                double y = state.y + right_s * sin(right_angle);
-                grid_map::Position new_position(x, y);
-                double clearance = map.getObstacleDistance(new_position);
-                if (clearance > FLAGS_circle_radius) {
-                    break;
-                }
-            }
-            left_bound = -right_s;
-            for (int j = 0; j != n; ++j) {
-                right_s += delta_s;
-                double x = state.x + right_s * cos(right_angle);
-                double y = state.y + right_s * sin(right_angle);
-                grid_map::Position new_position(x, y);
-                double clearance = map.getObstacleDistance(new_position);
-                if (clearance < FLAGS_circle_radius) {
-                    break;
-                }
-            }
-            right_bound = -right_s + delta_s;
-        } else {
-            DLOG(INFO) << "Choose left.";
-            // Expand to the left:
-            double left_s = 0;
-            for (int j = 0; j != n; ++j) {
-                left_s += delta_s;
-                double x = state.x + left_s * cos(left_angle);
-                double y = state.y + left_s * sin(left_angle);
-                grid_map::Position new_position(x, y);
-                double clearance = map.getObstacleDistance(new_position);
-                if (clearance > FLAGS_circle_radius) {
-                    break;
-                }
-            }
-            right_bound = left_s;
-            for (int j = 0; j != n; ++j) {
-                left_s += delta_s;
-                double x = state.x + left_s * cos(left_angle);
-                double y = state.y + left_s * sin(left_angle);
-                grid_map::Position new_position(x, y);
-                double clearance = map.getObstacleDistance(new_position);
-                if (clearance < FLAGS_circle_radius) {
-                    break;
-                }
-            }
-            left_bound = left_s - delta_s;
-        }
-        DLOG(INFO) << left_bound << ", " << right_bound;
+        LOG(INFO) << "ref state has collision!";
+        return {0.0, 0.0};
     }
+//        DLOG(INFO) << "Using relative position to determine the direction to expand.";
+//        // Use position to determine the direction.
+//        auto closest_point{getProjection(*x_s_,
+//                                         *y_s_,
+//                                         state.x,
+//                                         state.y,
+//                                         max_s_)};
+//        auto local_view{global2Local(state, closest_point)};
+//        DLOG(INFO) << "closest point: " << closest_point.x << ", " << closest_point.y << "\n"
+//                   << "state: " << state.x << ", " << state.y;
+//        if (local_view.y < 0) {
+//            DLOG(INFO) << "Choose right.";
+//            // Expand to the right:
+//            double right_s = 0;
+//            for (int j = 0; j != n; ++j) {
+//                right_s += delta_s;
+//                double x = state.x + right_s * cos(right_angle);
+//                double y = state.y + right_s * sin(right_angle);
+//                grid_map::Position new_position(x, y);
+//                double clearance = map.getObstacleDistance(new_position);
+//                if (clearance > search_radius) {
+//                    break;
+//                }
+//            }
+//            left_bound = -right_s;
+//            for (int j = 0; j != n; ++j) {
+//                right_s += delta_s;
+//                double x = state.x + right_s * cos(right_angle);
+//                double y = state.y + right_s * sin(right_angle);
+//                grid_map::Position new_position(x, y);
+//                double clearance = map.getObstacleDistance(new_position);
+//                if (clearance < search_radius) {
+//                    break;
+//                }
+//            }
+//            right_bound = -right_s + delta_s;
+//        } else {
+//            DLOG(INFO) << "Choose left.";
+//            // Expand to the left:
+//            double left_s = 0;
+//            for (int j = 0; j != n; ++j) {
+//                left_s += delta_s;
+//                double x = state.x + left_s * cos(left_angle);
+//                double y = state.y + left_s * sin(left_angle);
+//                grid_map::Position new_position(x, y);
+//                double clearance = map.getObstacleDistance(new_position);
+//                if (clearance > search_radius) {
+//                    break;
+//                }
+//            }
+//            right_bound = left_s;
+//            for (int j = 0; j != n; ++j) {
+//                left_s += delta_s;
+//                double x = state.x + left_s * cos(left_angle);
+//                double y = state.y + left_s * sin(left_angle);
+//                grid_map::Position new_position(x, y);
+//                double clearance = map.getObstacleDistance(new_position);
+//                if (clearance < search_radius) {
+//                    break;
+//                }
+//            }
+//            left_bound = left_s - delta_s;
+//        }
+//        DLOG(INFO) << left_bound << ", " << right_bound;
+//    }
     // Search backward more precisely.
     double smaller_ds = 0.1;
     for (int i = 1; i != static_cast<int>(delta_s / smaller_ds); ++i) {
@@ -320,7 +324,7 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
             state.x + left_bound * cos(left_angle),
             state.y + left_bound * sin(left_angle)
         );
-        if (map.getObstacleDistance(position) < FLAGS_circle_radius) {
+        if (map.getObstacleDistance(position) < search_radius) {
             left_bound -= smaller_ds;
             break;
         }
@@ -331,11 +335,14 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
             state.x + right_bound * cos(right_angle),
             state.y + right_bound * sin(right_angle)
         );
-        if (map.getObstacleDistance(position) < FLAGS_circle_radius) {
+        if (map.getObstacleDistance(position) < search_radius) {
             right_bound += smaller_ds;
             break;
         }
     }
+    auto diff_radius = FLAGS_circle_radius - search_radius;
+    left_bound -= diff_radius;
+    right_bound += diff_radius;
     // Only one direction:
     if (left_bound * right_bound >= 0) {
         display_set_.emplace_back(std::make_tuple(state, left_bound, right_bound));
