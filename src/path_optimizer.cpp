@@ -127,11 +127,19 @@ bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
     CHECK_NOTNULL(final_path);
     final_path->clear();
     // TODO: use config.
-    static const size_t max_iter_num = 1;
+    static const size_t max_iter_num = 2;
     for (size_t i = 0; i < max_iter_num; ++i) {
         LOG(INFO) << "Iter " << i << " begins.";
         BaseSolver solver(reference_path_, vehicle_state_, i, i > 0);
         if (!solver.solve(final_path)) {
+            for (const auto &bound : reference_path_->getBounds()) {
+                const auto &front = bound.front;
+                const auto &rear = bound.rear;
+                LOG(INFO) << "front: (" << front.x << ", " << front.y << "), bound: (" << front.lb << ", " << front.ub
+                          << ").";
+                LOG(INFO) << "rear: (" << rear.x << ", " << rear.y << "), bound: (" << rear.lb << ", " << rear.ub
+                          << ").";
+            }
             return false;
         }
         // Check convergence.
@@ -158,7 +166,7 @@ bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
 //    return this->reference_path_->display_abnormal_bounds();
 //}
 //
-const ReferencePath& PathOptimizer::getReferencePath() const {
+const ReferencePath &PathOptimizer::getReferencePath() const {
     return *reference_path_;
 }
 }

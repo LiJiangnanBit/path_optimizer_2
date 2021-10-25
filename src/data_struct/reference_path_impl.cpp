@@ -138,7 +138,7 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
                                                                            rear_center.heading + M_PI_2,
                                                                            state.s + 5.0,
                                                                            state.s - 5.0);
-
+        front_center_directional_projection.heading = rear_center_directional_projection.heading = state.heading;
         // Calculate boundaries.
         auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map);
         auto offset = global2Local(front_center, front_center_directional_projection).y;
@@ -148,8 +148,8 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
         offset = global2Local(rear_center, rear_center_directional_projection).y;
         rear_bound[0] += offset;
         rear_bound[1] += offset;
-        vehicle_state_bound.front.set(front_bound, front_center_directional_projection);
-        vehicle_state_bound.rear.set(rear_bound, rear_center_directional_projection);
+        vehicle_state_bound.front.set(front_bound, front_center);
+        vehicle_state_bound.rear.set(rear_bound, rear_center);
         if (isEqual(front_bound[0], front_bound[1]) || isEqual(rear_bound[0], rear_bound[1])) {
             LOG(INFO) << "Path is blocked at s: " << state.s;
             blocked_bound_.reset(new VehicleStateBound(vehicle_state_bound));
@@ -249,7 +249,7 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
         right_bound = -(right_s - delta_s);
         left_bound = left_s - delta_s;
     } else {
-        LOG(INFO) << "ref state has collision!";
+        LOG(INFO) << "ref state has collision! xy: " << state.x << ", " << state.y;
         return {0.0, 0.0};
     }
 //        DLOG(INFO) << "Using relative position to determine the direction to expand.";

@@ -214,16 +214,20 @@ int main(int argc, char **argv) {
 //            FLAGS_enable_dynamic_segmentation = false;
 //            FLAGS_enable_raw_output = false;
 //            FLAGS_output_spacing = 0.3;
-            if (path_optimizer.solve(reference_path_plot, &result_path)) {
-                std::cout << "ok!" << std::endl;
-                opt_ok = true;
-                smoothed_reference_path.clear();
-                reference_path_opt = path_optimizer.getReferencePath();
-                double s = 0;
+            auto ok = path_optimizer.solve(reference_path_plot, &result_path);
+            reference_path_opt = path_optimizer.getReferencePath();
+            smoothed_reference_path.clear();
+            if (!PathOptimizationNS::isEqual(reference_path_opt.getLength(), 0.0)) {
+                double s = 0.0;
                 while (s < reference_path_opt.getLength()) {
                     smoothed_reference_path.emplace_back(reference_path_opt.getXS()(s), reference_path_opt.getYS()(s));
                     s += 0.5;
                 }
+            }
+            if (ok) {
+                std::cout << "ok!" << std::endl;
+//                opt_ok = true;
+
             }
 //            abnormal_bounds = path_optimizer.display_abnormal_bounds();
         }
@@ -305,9 +309,8 @@ int main(int argc, char **argv) {
         // Visualize vehicle geometry.
         static const double length{FLAGS_car_length};
         static const double width{FLAGS_car_width};
-        static const double rtc{FLAGS_rear_axle_to_center};
-        static const double rear_d{length / 2 - rtc};
-        static const double front_d{length - rear_d};
+        static const double rear_d{FLAGS_rear_length};
+        static const double front_d{FLAGS_front_length};
         for (size_t i = 0; i != result_path.size(); ++i) {
             double heading = result_path[i].heading;
             PathOptimizationNS::State p1, p2, p3, p4;
@@ -315,9 +318,9 @@ int main(int argc, char **argv) {
             p1.y = width / 2;
             p2.x = front_d;
             p2.y = -width / 2;
-            p3.x = -rear_d;
+            p3.x = rear_d;
             p3.y = -width / 2;
-            p4.x = -rear_d;
+            p4.x = rear_d;
             p4.y = width / 2;
             auto tmp_relto = result_path[i];
             tmp_relto.heading = heading;

@@ -133,7 +133,7 @@ State getDirectionalProjection(const tk::spline &xs,
                                double max_s,
                                double start_s) {
     if (max_s <= start_s) {
-        return State{xs(start_s), ys(start_s)};
+        return State{xs(start_s), ys(start_s), getHeading(xs, ys, start_s)};
     }
     static const double grid = 2.0;
     double tmp_s = start_s, min_dot_value_s = start_s;
