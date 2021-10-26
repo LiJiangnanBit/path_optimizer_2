@@ -124,20 +124,20 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
         State rear_center(state.x + FLAGS_rear_length * cos(state.heading),
                           state.y + FLAGS_rear_length * sin(state.heading),
                           state.heading);
-        auto front_center_directional_projection = getDirectionalProjection(*x_s_,
-                                                                            *y_s_,
-                                                                            front_center.x,
-                                                                            front_center.y,
-                                                                            front_center.heading + M_PI_2,
-                                                                            state.s + 5.0,
-                                                                            state.s - 5.0);
-        auto rear_center_directional_projection = getDirectionalProjection(*x_s_,
-                                                                           *y_s_,
-                                                                           rear_center.x,
-                                                                           rear_center.y,
-                                                                           rear_center.heading + M_PI_2,
-                                                                           state.s + 5.0,
-                                                                           state.s - 5.0);
+        auto front_center_directional_projection = getDirectionalProjectionByNewton(*x_s_,
+                                                                                    *y_s_,
+                                                                                    front_center.x,
+                                                                                    front_center.y,
+                                                                                    front_center.heading + M_PI_2,
+                                                                                    state.s + 5.0,
+                                                                                    state.s + FLAGS_front_length);
+        auto rear_center_directional_projection = getDirectionalProjectionByNewton(*x_s_,
+                                                                                   *y_s_,
+                                                                                   rear_center.x,
+                                                                                   rear_center.y,
+                                                                                   rear_center.heading + M_PI_2,
+                                                                                   state.s + 5.0,
+                                                                                   state.s + FLAGS_rear_length);
         front_center_directional_projection.heading = rear_center_directional_projection.heading = state.heading;
         // Calculate boundaries.
         auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map);
