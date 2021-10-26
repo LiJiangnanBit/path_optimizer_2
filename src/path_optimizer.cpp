@@ -33,7 +33,6 @@ PathOptimizer::PathOptimizer(const State &start_state,
 }
 
 bool PathOptimizer::solve(const std::vector<State> &reference_points, std::vector<State> *final_path) {
-    std::cout << "\n---------" << std::endl;
     CHECK_NOTNULL(final_path);
     if (reference_points.empty()) {
         LOG(ERROR) << "Empty input, quit path optimization";
@@ -162,10 +161,6 @@ bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
     return true;
 }
 
-//std::vector<std::tuple<State, double, double>> PathOptimizer::display_abnormal_bounds() const {
-//    return this->reference_path_->display_abnormal_bounds();
-//}
-//
 const ReferencePath &PathOptimizer::getReferencePath() const {
     return *reference_path_;
 }
