@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
         }
         markers.append(smoothed_reference_marker);
         visualization_msgs::Marker vehicle_geometry_marker =
-            markers.newLineList(0.05, "vehicle", id++, ros_viz_tools::GRAY, marker_frame_id);
+            markers.newLineList(0.02, "vehicle", id++, ros_viz_tools::GRAY, marker_frame_id);
         // Visualize vehicle geometry.
         static const double length{FLAGS_car_length};
         static const double width{FLAGS_car_width};
@@ -356,7 +356,6 @@ int main(int argc, char **argv) {
             markers.newSphereList(0.45, "block state", id++, ros_viz_tools::PINK, marker_frame_id);
         static std::vector<double> len_vec{FLAGS_rear_length, 0.0, FLAGS_front_length};
         auto block_ptr = reference_path_opt.isBlocked();
-        LOG(INFO) << "block ptr " << (block_ptr != nullptr);
         if (block_ptr) {
             geometry_msgs::Point p;
             p.x = block_ptr->front.x;

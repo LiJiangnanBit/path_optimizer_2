@@ -318,6 +318,7 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
     auto vehicle_local = global2Local(proj_point, start_state_);
     vehicle_l_wrt_smoothed_ref_ = vehicle_local.y;
 
+    const auto half_width = FLAGS_car_width * 0.5;
     // Sample points.
     static const double search_k = 1.2;
     APoint start_point;
@@ -358,7 +359,7 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
             point.offset_idx = offset_idx;
             grid_map::Position position(point.x, point.y);
             if (grid_map_.isInside(position)
-                && grid_map_.getObstacleDistance(position) > search_k * FLAGS_car_width) {
+                && grid_map_.getObstacleDistance(position) > search_k * half_width) {
                 point_set.emplace_back(point);
             }
             offset += FLAGS_search_lateral_spacing;
@@ -455,7 +456,7 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
                 pos(0) = ref_x + upper_bound * cos(ptr->dir + M_PI_2);
                 pos(1) = ref_y + upper_bound * sin(ptr->dir + M_PI_2);
                 if (grid_map_.isInside(pos)
-                    && grid_map_.getObstacleDistance(pos) > 1.3 * FLAGS_car_width) {
+                    && grid_map_.getObstacleDistance(pos) > 1.3 * half_width) {
                     upper_bound += check_s;
                 } else {
                     upper_bound -= check_s;
@@ -467,7 +468,7 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
                 pos(0) = ref_x + lower_bound * cos(ptr->dir + M_PI_2);
                 pos(1) = ref_y + lower_bound * sin(ptr->dir + M_PI_2);
                 if (grid_map_.isInside(pos)
-                    && grid_map_.getObstacleDistance(pos) > search_k * FLAGS_car_width) {
+                    && grid_map_.getObstacleDistance(pos) > search_k * half_width) {
                     lower_bound -= check_s;
                 } else {
                     lower_bound += check_s;

@@ -226,7 +226,7 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
             break;
         }
     }
-    auto diff_radius = FLAGS_car_width - search_radius;
+    auto diff_radius = FLAGS_car_width * 0.5 - search_radius;
     left_bound -= diff_radius;
     right_bound += diff_radius;
     // Hard safety margin. 
