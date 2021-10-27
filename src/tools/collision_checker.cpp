@@ -9,8 +9,8 @@ namespace PathOptimizationNS {
 CollisionChecker::CollisionChecker(const grid_map::GridMap &in_gm)
     : map_(in_gm),
       car_(FLAGS_car_width,
-           FLAGS_car_length / 2.0 - FLAGS_rear_axle_to_center,
-           FLAGS_car_length / 2.0 + FLAGS_rear_axle_to_center)
+           fabs(FLAGS_rear_length),
+           FLAGS_front_length)
 {
 }
 

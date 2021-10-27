@@ -7,37 +7,19 @@
 
 #include <gflags/gflags.h>
 
-void updateConfig();
-
 DECLARE_double(car_width);
 
 DECLARE_double(car_length);
 
 DECLARE_double(safety_margin);
 
-DECLARE_double(circle_radius);
-
 DECLARE_double(wheel_base);
-
-DECLARE_double(rear_axle_to_center);
 
 DECLARE_double(rear_length);
 
 DECLARE_double(front_length);
 
-DECLARE_double(d1);
-
-DECLARE_double(d2);
-
-DECLARE_double(d3);
-
-DECLARE_double(d4);
-
 DECLARE_double(max_steering_angle);
-
-DECLARE_double(mu);
-
-DECLARE_double(max_curvature_rate);
 
 DECLARE_string(smoothing_method);
 
@@ -93,13 +75,7 @@ DECLARE_bool(constraint_end_heading);
 
 DECLARE_bool(enable_exact_position);
 
-DECLARE_bool(enable_raw_output);
-
 DECLARE_double(output_spacing);
-
-DECLARE_bool(enable_computation_time_output);
-
-DECLARE_bool(enable_collision_check);
 
 DECLARE_double(search_obstacle_cost);
 

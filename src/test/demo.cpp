@@ -196,12 +196,12 @@ int main(int argc, char **argv) {
 //            FLAGS_enable_searching = true;
 //            FLAGS_expected_safety_margin = 1.8;
             FLAGS_optimization_method = "KP";
-            FLAGS_enable_computation_time_output = false;
-            FLAGS_enable_raw_output = true; // Set this to false will make it much faster.
+            // FLAGS_enable_computation_time_output = false;
+            // FLAGS_enable_raw_output = true; // Set this to false will make it much faster.
 //            FLAGS_expected_safety_margin = 1.8; // Expected, not mandatory.
             FLAGS_safety_margin = 0.0; // Mandatory safety margin.
 //            FLAGS_enable_simple_boundary_decision = true;
-            FLAGS_enable_collision_check = true;
+            // FLAGS_enable_collision_check = true;
 //            FLAGS_car_length = 4.13;
 //            FLAGS_car_width = 2.1;
 //            FLAGS_rear_axle_to_center = 1.9;

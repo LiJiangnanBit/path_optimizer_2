@@ -38,9 +38,7 @@ class ReferencePathImpl {
     void setLength(double s);
     const std::vector<State> &getReferenceStates() const;
     const std::vector<VehicleStateBound> &getBounds() const;
-    std::vector<std::tuple<State, double, double>> display_abnormal_bounds() const;
     // Calculate upper and lower bounds for each covering circle.
-    // void updateBounds(const Map &map);
     void updateBoundsImproved(const Map &map);
     // Calculate reference_states_ from x_s_ and y_s_, given delta s.
     bool buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger);
@@ -63,8 +61,6 @@ class ReferencePathImpl {
     // Divided smoothed path info.
     std::vector<State> reference_states_;
     std::vector<VehicleStateBound> bounds_;
-    // To test updateBounds function;
-    std::vector<std::tuple<State, double, double>> display_set_;
     // Debug.
     std::shared_ptr<VehicleStateBound> blocked_bound_;
 };

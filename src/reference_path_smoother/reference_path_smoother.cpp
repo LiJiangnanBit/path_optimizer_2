@@ -293,9 +293,6 @@ bool ReferencePathSmoother::graphSearchDp(std::shared_ptr<PathOptimizationNS::Re
     layers_s_list_.resize(layers_bounds_.size());
 
     auto t2 = std::clock();
-    if (FLAGS_enable_computation_time_output) {
-        time_ms_out(t1, t2, "Search");
-    }
     return true;
 
 }
@@ -361,7 +358,7 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
             point.offset_idx = offset_idx;
             grid_map::Position position(point.x, point.y);
             if (grid_map_.isInside(position)
-                && grid_map_.getObstacleDistance(position) > search_k * FLAGS_circle_radius) {
+                && grid_map_.getObstacleDistance(position) > search_k * FLAGS_car_width) {
                 point_set.emplace_back(point);
             }
             offset += FLAGS_search_lateral_spacing;
@@ -458,7 +455,7 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
                 pos(0) = ref_x + upper_bound * cos(ptr->dir + M_PI_2);
                 pos(1) = ref_y + upper_bound * sin(ptr->dir + M_PI_2);
                 if (grid_map_.isInside(pos)
-                    && grid_map_.getObstacleDistance(pos) > 1.3 * FLAGS_circle_radius) {
+                    && grid_map_.getObstacleDistance(pos) > 1.3 * FLAGS_car_width) {
                     upper_bound += check_s;
                 } else {
                     upper_bound -= check_s;
@@ -470,7 +467,7 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
                 pos(0) = ref_x + lower_bound * cos(ptr->dir + M_PI_2);
                 pos(1) = ref_y + lower_bound * sin(ptr->dir + M_PI_2);
                 if (grid_map_.isInside(pos)
-                    && grid_map_.getObstacleDistance(pos) > search_k * FLAGS_circle_radius) {
+                    && grid_map_.getObstacleDistance(pos) > search_k * FLAGS_car_width) {
                     lower_bound -= check_s;
                 } else {
                     lower_bound += check_s;
@@ -485,9 +482,6 @@ bool ReferencePathSmoother::graphSearch(std::shared_ptr<PathOptimizationNS::Refe
     layers_s_list_.resize(layers_bounds_.size());
 
     auto t2 = std::clock();
-    if (FLAGS_enable_computation_time_output) {
-        time_ms_out(t1, t2, "Search");
-    }
     return true;
 }
 

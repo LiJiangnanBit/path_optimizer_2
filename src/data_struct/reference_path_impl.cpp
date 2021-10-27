@@ -85,10 +85,6 @@ const std::vector<VehicleStateBound> &ReferencePathImpl::getBounds() const {
     return bounds_;
 }
 
-std::vector<std::tuple<State, double, double>> ReferencePathImpl::display_abnormal_bounds() const {
-    return display_set_;
-}
-
 State ReferencePathImpl::getApproxState(const State &original_state, const State &actual_state, double len) const {
     // Point on reference.
     double x = (*x_s_)(original_state.s + len);
@@ -162,52 +158,6 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
     }
 }
 
-//void ReferencePathImpl::updateBounds(const Map &map) {
-//    if (reference_states_.empty()) {
-//        LOG(WARNING) << "Empty reference, updateBounds fail!";
-//        return;
-//    }
-//    bounds_.clear();
-//    for (const auto &state : reference_states_) {
-//        // Circle centers.
-//        State
-//            c0(state.x + FLAGS_d1 * cos(state.z),
-//               state.y + FLAGS_d1 * sin(state.z),
-//               state.z),
-//            c1(state.x + FLAGS_d2 * cos(state.z),
-//               state.y + FLAGS_d2 * sin(state.z),
-//               state.z),
-//            c2(state.x + FLAGS_d3 * cos(state.z),
-//               state.y + FLAGS_d3 * sin(state.z),
-//               state.z),
-//            c3(state.x + FLAGS_d4 * cos(state.z),
-//               state.y + FLAGS_d4 * sin(state.z),
-//               state.z);
-//        // Calculate boundaries.
-//        auto clearance_0 = getClearanceWithDirectionStrict(c0, map);
-//        auto clearance_1 = getClearanceWithDirectionStrict(c1, map);
-//        auto clearance_2 = getClearanceWithDirectionStrict(c2, map);
-//        auto clearance_3 = getClearanceWithDirectionStrict(c3, map);
-//        if (clearance_0[0] == clearance_0[1] ||
-//            clearance_1[0] == clearance_1[1] ||
-//            clearance_2[0] == clearance_2[1] ||
-//            clearance_3[0] == clearance_3[1]) {
-//            LOG(INFO) << "Path is blocked at s: " << state.s;
-//            return;
-//        }
-//        VehicleStateBound covering_circle_bounds;
-//        covering_circle_bounds.c0 = clearance_0;
-//        covering_circle_bounds.c1 = clearance_1;
-//        covering_circle_bounds.c2 = clearance_2;
-//        covering_circle_bounds.c3 = clearance_3;
-//        bounds_.emplace_back(covering_circle_bounds);
-//    }
-//    if (reference_states_.size() != bounds_.size()) {
-//        reference_states_.resize(bounds_.size());
-//    }
-//    LOG(INFO) << "Boundary updated.";
-//}
-
 std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const PathOptimizationNS::State &state,
                                                                        const PathOptimizationNS::Map &map) {
     // TODO: too much repeated code!
@@ -249,76 +199,11 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
         right_bound = -(right_s - delta_s);
         left_bound = left_s - delta_s;
     } else {
-        LOG(INFO) << "ref state has collision! xy: " << state.x << ", " << state.y;
+        LOG(INFO) << "ref state is close to obstacles! xy: " << state.x << ", " << state.y;
         return {0.0, 0.0};
     }
-//        DLOG(INFO) << "Using relative position to determine the direction to expand.";
-//        // Use position to determine the direction.
-//        auto closest_point{getProjection(*x_s_,
-//                                         *y_s_,
-//                                         state.x,
-//                                         state.y,
-//                                         max_s_)};
-//        auto local_view{global2Local(state, closest_point)};
-//        DLOG(INFO) << "closest point: " << closest_point.x << ", " << closest_point.y << "\n"
-//                   << "state: " << state.x << ", " << state.y;
-//        if (local_view.y < 0) {
-//            DLOG(INFO) << "Choose right.";
-//            // Expand to the right:
-//            double right_s = 0;
-//            for (int j = 0; j != n; ++j) {
-//                right_s += delta_s;
-//                double x = state.x + right_s * cos(right_angle);
-//                double y = state.y + right_s * sin(right_angle);
-//                grid_map::Position new_position(x, y);
-//                double clearance = map.getObstacleDistance(new_position);
-//                if (clearance > search_radius) {
-//                    break;
-//                }
-//            }
-//            left_bound = -right_s;
-//            for (int j = 0; j != n; ++j) {
-//                right_s += delta_s;
-//                double x = state.x + right_s * cos(right_angle);
-//                double y = state.y + right_s * sin(right_angle);
-//                grid_map::Position new_position(x, y);
-//                double clearance = map.getObstacleDistance(new_position);
-//                if (clearance < search_radius) {
-//                    break;
-//                }
-//            }
-//            right_bound = -right_s + delta_s;
-//        } else {
-//            DLOG(INFO) << "Choose left.";
-//            // Expand to the left:
-//            double left_s = 0;
-//            for (int j = 0; j != n; ++j) {
-//                left_s += delta_s;
-//                double x = state.x + left_s * cos(left_angle);
-//                double y = state.y + left_s * sin(left_angle);
-//                grid_map::Position new_position(x, y);
-//                double clearance = map.getObstacleDistance(new_position);
-//                if (clearance > search_radius) {
-//                    break;
-//                }
-//            }
-//            right_bound = left_s;
-//            for (int j = 0; j != n; ++j) {
-//                left_s += delta_s;
-//                double x = state.x + left_s * cos(left_angle);
-//                double y = state.y + left_s * sin(left_angle);
-//                grid_map::Position new_position(x, y);
-//                double clearance = map.getObstacleDistance(new_position);
-//                if (clearance < search_radius) {
-//                    break;
-//                }
-//            }
-//            left_bound = left_s - delta_s;
-//        }
-//        DLOG(INFO) << left_bound << ", " << right_bound;
-//    }
     // Search backward more precisely.
-    double smaller_ds = 0.1;
+    double smaller_ds = 0.05;
     for (int i = 1; i != static_cast<int>(delta_s / smaller_ds); ++i) {
         left_bound += smaller_ds;
         grid_map::Position position(
@@ -341,13 +226,13 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
             break;
         }
     }
-    auto diff_radius = FLAGS_circle_radius - search_radius;
+    auto diff_radius = FLAGS_car_width - search_radius;
     left_bound -= diff_radius;
     right_bound += diff_radius;
-    // Only one direction:
-    if (left_bound * right_bound >= 0) {
-        display_set_.emplace_back(std::make_tuple(state, left_bound, right_bound));
-    }
+    // Hard safety margin. 
+    left_bound -= FLAGS_safety_margin;
+    right_bound += FLAGS_safety_margin;
+    if (left_bound < right_bound) return {0.0, 0.0};
     return {left_bound, right_bound};
 }
 

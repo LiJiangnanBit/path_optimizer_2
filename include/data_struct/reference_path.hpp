@@ -33,7 +33,6 @@ class ReferencePath {
     void setLength(double s);
     const std::vector<State> &getReferenceStates() const;
     const std::vector<VehicleStateBound> &getBounds() const;
-    std::vector<std::tuple<State, double, double>> display_abnormal_bounds() const;
     // Calculate upper and lower bounds for each covering circle.
     void updateBounds(const Map &map);
     // Calculate reference_states_ from x_s_ and y_s_, given delta s.

@@ -54,10 +54,6 @@ const std::vector<VehicleStateBound> &ReferencePath::getBounds() const {
     return reference_path_impl_->getBounds();
 }
 
-std::vector<std::tuple<State, double, double>> ReferencePath::display_abnormal_bounds() const {
-    return reference_path_impl_->display_abnormal_bounds();
-}
-
 void ReferencePath::updateBounds(const Map &map) {
     reference_path_impl_->updateBoundsImproved(map);
 }
