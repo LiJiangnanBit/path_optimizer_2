@@ -85,6 +85,15 @@ const std::vector<VehicleStateBound> &ReferencePathImpl::getBounds() const {
     return bounds_;
 }
 
+void ReferencePathImpl::logBoundsInfo() const {
+    for (const auto &bound : bounds_) {
+        const auto &front = bound.front;
+        const auto &rear = bound.rear;
+        LOG(INFO) << "front: (" << front.x << ", " << front.y << "), bound: (" << front.lb << ", " << front.ub << ").";
+        LOG(INFO) << "rear: (" << rear.x << ", " << rear.y << "), bound: (" << rear.lb << ", " << rear.ub << ").";
+    }
+}
+
 State ReferencePathImpl::getApproxState(const State &original_state, const State &actual_state, double len) const {
     // Point on reference.
     double x = (*x_s_)(original_state.s + len);

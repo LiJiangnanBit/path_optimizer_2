@@ -54,6 +54,10 @@ const std::vector<VehicleStateBound> &ReferencePath::getBounds() const {
     return reference_path_impl_->getBounds();
 }
 
+void ReferencePath::logBoundsInfo() const {
+    reference_path_impl_->logBoundsInfo();
+}
+
 void ReferencePath::updateBounds(const Map &map) {
     reference_path_impl_->updateBoundsImproved(map);
 }

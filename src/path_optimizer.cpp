@@ -125,39 +125,36 @@ bool PathOptimizer::processReferencePath() {
 bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
     CHECK_NOTNULL(final_path);
     final_path->clear();
-    // TODO: use config.
-    static const size_t max_iter_num = 3;
-    for (size_t i = 0; i < max_iter_num; ++i) {
-        LOG(INFO) << "Iter " << i << " begins.";
-        BaseSolver solver(reference_path_, vehicle_state_, i, i > 0);
-        if (!solver.solve(final_path)) {
-            for (const auto &bound : reference_path_->getBounds()) {
-                const auto &front = bound.front;
-                const auto &rear = bound.rear;
-                LOG(INFO) << "front: (" << front.x << ", " << front.y << "), bound: (" << front.lb << ", " << front.ub
-                          << ").";
-                LOG(INFO) << "rear: (" << rear.x << ", " << rear.y << "), bound: (" << rear.lb << ", " << rear.ub
-                          << ").";
-            }
-            return false;
-        }
-        // Check convergence.
-        auto is_converged = true;
-        if (/*is_converged || (i > 0 && true *//*no collision*//*)*/ false) {
-
-            break;
-//        } else if (i == max_iter_num - 1) {
-//            // Hard constraints.
-
-        } else {
-            // Update ref path.
-            reference_path_->buildReferenceFromStates(*final_path);
-            reference_path_->updateBounds(*grid_map_);
-            vehicle_state_->setStartState(final_path->front());
-            vehicle_state_->setTargetState(final_path->back());
-            vehicle_state_->setInitError(0.0, 0.0);
-        }
+    // TODO: remove arg: iter_num.
+    BaseSolver pre_solver(reference_path_, vehicle_state_, 0, false);
+    TimeRecorder time_recorder;
+    // Solve with soft collision constraints.
+    time_recorder.recordTime("Pre solving");
+    if (!pre_solver.solve(final_path)) {
+        LOG(ERROR) << "Pre solving failed!";
+        reference_path_->logBoundsInfo();
+        return false;
     }
+    // Collision check.
+
+    // Solve with hard collision constraints.
+    // Update ref path.
+    time_recorder.recordTime("Update ref");
+    reference_path_->buildReferenceFromStates(*final_path);
+    reference_path_->updateBounds(*grid_map_);
+    vehicle_state_->setStartState(final_path->front());
+    vehicle_state_->setTargetState(final_path->back());
+    vehicle_state_->setInitError(0.0, 0.0);
+    // Solve.
+    time_recorder.recordTime("Solving");
+    BaseSolver solver(reference_path_, vehicle_state_, 0, true);
+    if (!solver.solve(final_path)) {
+        LOG(ERROR) << "Solving failed!";
+        reference_path_->logBoundsInfo();
+        return false;
+    }
+    time_recorder.recordTime("end");
+    time_recorder.printTime();
     return true;
 }
 
