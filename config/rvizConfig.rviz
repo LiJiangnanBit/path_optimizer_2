@@ -50,11 +50,14 @@ Visualization Manager:
       Marker Topic: /path_optimizer_2_demo/markers
       Name: MarkerArray
       Namespaces:
+        block state: true
         end point: true
+        front bounds: false
         optimized path: true
         optimized path by boxes: true
+        rear bounds: false
         reference point: true
-        smoothed reference path: true
+        smoothed reference path: false
         start point: true
         vehicle: true
       Queue Size: 100
@@ -83,7 +86,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -95.8898926
+      Angle: -98.2399063
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
@@ -93,11 +96,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 8.80806351
+      Scale: 19.6544781
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: -3.27537346
-      Y: 2.10074902
+      X: -13.0206108
+      Y: -0.874421537
     Saved: ~
 Window Geometry:
   Displays:

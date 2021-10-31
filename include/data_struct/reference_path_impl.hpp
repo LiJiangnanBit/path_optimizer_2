@@ -38,7 +38,7 @@ class ReferencePathImpl {
     void setLength(double s);
     const std::vector<State> &getReferenceStates() const;
     const std::vector<VehicleStateBound> &getBounds() const;
-    void logBoundsInfo() const
+    void logBoundsInfo() const;
     // Calculate upper and lower bounds for each covering circle.
     void updateBoundsImproved(const Map &map);
     // Calculate reference_states_ from x_s_ and y_s_, given delta s.

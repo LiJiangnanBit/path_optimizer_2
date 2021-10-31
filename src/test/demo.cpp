@@ -37,7 +37,6 @@
 PathOptimizationNS::State start_state, end_state;
 std::vector<PathOptimizationNS::State> reference_path_plot;
 PathOptimizationNS::ReferencePath reference_path_opt;
-//std::vector<std::tuple<PathOptimizationNS::State, double, double>> abnormal_bounds;
 bool start_state_rcv = false, end_state_rcv = false, reference_rcv = false;
 
 void referenceCb(const geometry_msgs::PointStampedConstPtr &p) {
@@ -193,28 +192,8 @@ int main(int argc, char **argv) {
         std::vector<std::vector<double>> a_star_display(3);
         bool opt_ok = false;
         if (reference_rcv && start_state_rcv && end_state_rcv) {
-//            FLAGS_enable_searching = true;
-//            FLAGS_expected_safety_margin = 1.8;
-            FLAGS_optimization_method = "KP";
-            // FLAGS_enable_computation_time_output = false;
-            // FLAGS_enable_raw_output = true; // Set this to false will make it much faster.
-//            FLAGS_expected_safety_margin = 1.8; // Expected, not mandatory.
-            FLAGS_safety_margin = 0.0; // Mandatory safety margin.
-//            FLAGS_enable_simple_boundary_decision = true;
-            // FLAGS_enable_collision_check = true;
-//            FLAGS_car_length = 4.13;
-//            FLAGS_car_width = 2.1;
-//            FLAGS_rear_axle_to_center = 1.9;
-//            FLAGS_car_length = 4.9;
-//            FLAGS_car_width = 2.0;
-//            FLAGS_rear_axle_to_center = 1.45;
-//            FLAGS_constraint_end_heading = false;
-//            FLAGS_smoothing_method = "ANGLE_DIFF";
             PathOptimizationNS::PathOptimizer path_optimizer(start_state, end_state, grid_map);
-//            FLAGS_enable_dynamic_segmentation = false;
-//            FLAGS_enable_raw_output = false;
-//            FLAGS_output_spacing = 0.3;
-            auto ok = path_optimizer.solve(reference_path_plot, &result_path);
+            opt_ok = path_optimizer.solve(reference_path_plot, &result_path);
             reference_path_opt = path_optimizer.getReferencePath();
             smoothed_reference_path.clear();
             if (!PathOptimizationNS::isEqual(reference_path_opt.getLength(), 0.0)) {
@@ -224,56 +203,34 @@ int main(int argc, char **argv) {
                     s += 0.5;
                 }
             }
-            if (ok) {
+            if (opt_ok) {
                 std::cout << "ok!" << std::endl;
-//                opt_ok = true;
 
             }
-//            abnormal_bounds = path_optimizer.display_abnormal_bounds();
         }
 
-        // Visualize a-star.
-//        visualization_msgs::Marker a_star_marker =
-//            markers.newSphereList(0.3, "a_star point", id++, ros_viz_tools::YELLOW, marker_frame_id);
-//        for (size_t i = 0; i != a_star_display[0].size(); ++i) {
-//            geometry_msgs::Point p;
-//            p.x = a_star_display[0][i];
-//            p.y = a_star_display[1][i];
-//            p.z = 1.0;
-//            a_star_marker.points.push_back(p);
-//        }
-//        markers.append(a_star_marker);
-
-        // Visualize abnormal bounds.
-//        visualization_msgs::Marker abnormal_bounds_marker =
-//            markers.newSphereList(0.1, "abnormal bounds", id++, ros_viz_tools::MAGENTA, marker_frame_id);
-//        for (size_t i = 0; i != abnormal_bounds.size(); ++i) {
-//            auto &ele = abnormal_bounds[i];
-//            geometry_msgs::Point state, left_bound, rignt_bound;
-//            state.x = std::get<0>(ele).x;
-//            state.y = std::get<0>(ele).y;
-//            abnormal_bounds_marker.points.push_back(state);
-//            abnormal_bounds_marker.colors.push_back(ros_viz_tools::MAGENTA);
-//            left_bound.x = state.x + std::get<1>(ele) * cos(std::get<0>(ele).heading + M_PI_2);
-//            left_bound.y = state.y + std::get<1>(ele) * sin(std::get<0>(ele).heading + M_PI_2);
-//            rignt_bound.x = state.x + std::get<2>(ele) * cos(std::get<0>(ele).heading + M_PI_2);
-//            rignt_bound.y = state.y + std::get<2>(ele) * sin(std::get<0>(ele).heading + M_PI_2);
-//            abnormal_bounds_marker.points.push_back(left_bound);
-//            abnormal_bounds_marker.colors.push_back(ros_viz_tools::PURPLE);
-//            abnormal_bounds_marker.points.push_back(rignt_bound);
-//            abnormal_bounds_marker.colors.push_back(ros_viz_tools::PURPLE);
-//        }
-//        markers.append(abnormal_bounds_marker);
-
         // Visualize result path.
+        ros_viz_tools::ColorRGBA path_color;
+        path_color.r = 0.063;
+        path_color.g = 0.305;
+        path_color.b = 0.545;
+        if (!opt_ok) {
+            path_color.r = 1.0;
+            path_color.g = 0.0;
+            path_color.b = 0.0;
+        }
         visualization_msgs::Marker result_marker =
-            markers.newLineStrip(0.15, "optimized path", id++, ros_viz_tools::GREEN, marker_frame_id);
+            markers.newLineStrip(FLAGS_car_width, "optimized path", id++, path_color, marker_frame_id);
         for (size_t i = 0; i != result_path.size(); ++i) {
             geometry_msgs::Point p;
             p.x = result_path[i].x;
             p.y = result_path[i].y;
             p.z = 1.0;
             result_marker.points.push_back(p);
+            const auto k = result_path[i].k;
+            path_color.a = std::min(fabs(k) / 0.15, 1.0);
+            path_color.a = std::max((float)0.1, path_color.a);
+            result_marker.colors.emplace_back(path_color);
         }
         markers.append(result_marker);
 
@@ -304,8 +261,10 @@ int main(int argc, char **argv) {
             smoothed_reference_marker.points.push_back(p);
         }
         markers.append(smoothed_reference_marker);
+        ros_viz_tools::ColorRGBA vehicle_color = ros_viz_tools::GRAY;
+        vehicle_color.a = 0.5;
         visualization_msgs::Marker vehicle_geometry_marker =
-            markers.newLineList(0.02, "vehicle", id++, ros_viz_tools::GRAY, marker_frame_id);
+            markers.newLineList(0.03, "vehicle", id++, vehicle_color, marker_frame_id);
         // Visualize vehicle geometry.
         static const double length{FLAGS_car_length};
         static const double width{FLAGS_car_width};
@@ -409,18 +368,6 @@ int main(int argc, char **argv) {
         // Publish markers.
         markers.publish();
         LOG_EVERY_N(INFO, 20) << "map published.";
-
-        // Test projection function.
-//        if (opt_ok) {
-//            auto proj = PathOptimizationNS::getDirectionalProjectionByNewton(reference_path_opt.getXS(),
-//                                                                             reference_path_opt.getYS(),
-//                                                                             0.0,
-//                                                                             0.0,
-//                                                                             0.0,
-//                                                                             reference_path_opt.getLength(),
-//                                                                             2.0);
-//            std::cout << "proj x: " << proj.x << ", y: " << proj.y << ", s: " << proj.s << std::endl;
-//        }
 
         // Wait for next cycle.
         ros::spinOnce();

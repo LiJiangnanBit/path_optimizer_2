@@ -9,7 +9,7 @@
 /////
 DEFINE_double(car_width, 2.0, "");
 
-DEFINE_double(car_length, 4.5, "");
+DEFINE_double(car_length, 4.9, "");
 
 DEFINE_double(safety_margin, 0.1, "mandatory safety margin");
 
