@@ -238,10 +238,14 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
     auto diff_radius = FLAGS_car_width * 0.5 - search_radius;
     left_bound -= diff_radius;
     right_bound += diff_radius;
-    // Hard safety margin. 
-    left_bound -= FLAGS_safety_margin;
-    right_bound += FLAGS_safety_margin;
     if (left_bound < right_bound) return {0.0, 0.0};
+    // Hard safety margin.
+    const auto space = left_bound - right_bound;
+    static const auto min_space = 0.2;
+    const auto max_safety_margin = std::max(0.0, (space - min_space) / 2.0);
+    const auto safety_margin = std::min(FLAGS_safety_margin, max_safety_margin);
+    left_bound -= safety_margin;
+    right_bound += safety_margin;
     return {left_bound, right_bound};
 }
 

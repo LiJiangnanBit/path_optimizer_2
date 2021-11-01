@@ -11,7 +11,7 @@ DEFINE_double(car_width, 2.0, "");
 
 DEFINE_double(car_length, 4.9, "");
 
-DEFINE_double(safety_margin, 0.1, "mandatory safety margin");
+DEFINE_double(safety_margin, 0.3, "mandatory safety margin");
 
 DEFINE_double(wheel_base, 2.5, "wheel base");
 
@@ -92,7 +92,7 @@ DEFINE_double(KP_deviation_weight, 0, "deviation weight of solver KP and KPC");
 
 DEFINE_double(KP_slack_weight, 3, "punish distance to obstacles");
 
-DEFINE_double(expected_safety_margin, 1.3, "soft constraint on the distance to obstacles");
+DEFINE_double(expected_safety_margin, 0.6, "soft constraint on the distance to obstacles");
 
 // TODO: make this work.
 DEFINE_bool(constraint_end_heading, true, "add constraints on end heading");
