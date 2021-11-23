@@ -27,7 +27,7 @@ DEFINE_double(max_steering_angle, 35.0 * M_PI / 180.0, "");
 DEFINE_string(smoothing_method, "TENSION2", "rReference smoothing method");
 bool ValidateSmoothingnMethod(const char *flagname, const std::string &value)
 {
-    return value == "ANGLE_DIFF" || value == "TENSION" || value == "TENSION2";
+    return value == "TENSION" || value == "TENSION2";
 }
 bool isSmoothingMethodValid = google::RegisterFlagValidator(&FLAGS_smoothing_method, ValidateSmoothingnMethod);
 

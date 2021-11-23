@@ -8,7 +8,6 @@
 #include "tools/Map.hpp"
 #include "config/planning_flags.hpp"
 #include "data_struct/reference_path.hpp"
-#include "reference_path_smoother/angle_diff_smoother.hpp"
 #include "reference_path_smoother/tension_smoother.hpp"
 #include "reference_path_smoother/tension_smoother_2.hpp"
 #include "OsqpEigen/OsqpEigen.h"
@@ -19,9 +18,7 @@ std::unique_ptr<ReferencePathSmoother> ReferencePathSmoother::create(const std::
                                                                      const std::vector<State> &input_points,
                                                                      const State &start_state,
                                                                      const Map &grid_map) {
-    if (type == "ANGLE_DIFF") {
-        return std::unique_ptr<ReferencePathSmoother>{new AngleDiffSmoother(input_points, start_state, grid_map)};
-    } else if (type == "TENSION") {
+    if (type == "TENSION") {
         return std::unique_ptr<ReferencePathSmoother>{new TensionSmoother(input_points, start_state, grid_map)};
     } else if (type == "TENSION2") {
         return std::unique_ptr<ReferencePathSmoother>{new TensionSmoother2(input_points, start_state, grid_map)};

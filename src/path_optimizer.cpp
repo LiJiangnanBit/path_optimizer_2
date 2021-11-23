@@ -18,7 +18,6 @@
 #include "tools/spline.h"
 #include "solver/base_solver.hpp"
 #include "tinyspline_ros/tinysplinecpp.h"
-#include "reference_path_smoother/angle_diff_smoother.hpp"
 #include "reference_path_smoother/tension_smoother.hpp"
 
 namespace PathOptimizationNS {

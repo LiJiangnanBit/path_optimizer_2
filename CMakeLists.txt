@@ -17,12 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
         ${catkin_deps}
         )
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-
-message(STATUS "CMAKE SOURCE DIR:" ${CMAKE_MODULE_PATH})
-
-find_package(IPOPT REQUIRED)
-find_package(benchmark REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV 3 REQUIRED)
@@ -56,11 +50,10 @@ add_library(${PROJECT_NAME}
         src/data_struct/reference_path.cpp
         src/data_struct/vehicle_state_frenet.cpp
         src/config/planning_flags.cpp
-        src/reference_path_smoother/angle_diff_smoother.cpp
         src/reference_path_smoother/tension_smoother.cpp
         src/reference_path_smoother/tension_smoother_2.cpp
         src/tools/time_recorder.cpp)
-target_link_libraries(${PROJECT_NAME} glog gflags ${IPOPT_LIBRARIES} ${catkin_LIBRARIES} OsqpEigen::OsqpEigen osqp::osqp
+target_link_libraries(${PROJECT_NAME} glog gflags ${catkin_LIBRARIES} OsqpEigen::OsqpEigen osqp::osqp
         )
 
 add_executable(${PROJECT_NAME}_demo
