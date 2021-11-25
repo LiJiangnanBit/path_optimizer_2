@@ -19,7 +19,7 @@ These dependencies (except for ROS) can be installed by running script/install_d
 ## Usage
 A png image is loaded as the grid map. You can click to specify the global reference path and the start/goal state of the vehicle.  
 ~~~
-roslaunch path_optimizer demo.launch
+roslaunch path_optimizer_2 demo.launch
 ~~~
 #### (1) Pick reference points using "Publish Point" tool in RViz.  
 - Pick at least six points.  
