@@ -31,7 +31,7 @@ PathOptimizer::PathOptimizer(const State &start_state,
     vehicle_state_(std::make_shared<VehicleState>(start_state, end_state, 0.0, 0.0)) {
 }
 
-bool PathOptimizer::solve(const std::vector<State> &reference_points, std::vector<State> *final_path) {
+bool PathOptimizer::solve(const std::vector<State> &reference_points, std::vector<SlState> *final_path) {
     CHECK_NOTNULL(final_path);
     if (reference_points.empty()) {
         LOG(ERROR) << "Empty input, quit path optimization";
@@ -121,11 +121,21 @@ bool PathOptimizer::processReferencePath() {
     return true;
 }
 
-bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
+bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
     CHECK_NOTNULL(final_path);
     final_path->clear();
     // TODO: remove arg: iter_num.
-    BaseSolver pre_solver(reference_path_, vehicle_state_, 0, false);
+    std::shared_ptr<std::vector<SlState>> input_path = std::make_shared<std::vector<SlState>>();
+    for (const auto &ref_state : reference_path_->getReferenceStates()) {
+        SlState input_state;
+        input_state.x = ref_state.x;
+        input_state.y = ref_state.y;
+        input_state.heading = ref_state.heading;
+        input_state.s = ref_state.s;
+        input_state.k = ref_state.k;
+        input_path->push_back(input_state);
+    }
+    BaseSolver pre_solver(reference_path_, vehicle_state_, input_path);
     TimeRecorder time_recorder;
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");
@@ -134,19 +144,15 @@ bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
         reference_path_->logBoundsInfo();
         return false;
     }
-    // Collision check.
-
-    // Solve with hard collision constraints.
-    // Update ref path.
     time_recorder.recordTime("Update ref");
-    reference_path_->buildReferenceFromStates(*final_path);
-    reference_path_->updateBounds(*grid_map_);
-    vehicle_state_->setStartState(final_path->front());
-    vehicle_state_->setTargetState(final_path->back());
-    vehicle_state_->setInitError(0.0, 0.0);
+    input_path->clear();
+    for (const auto &pre_solve_state : *final_path) {
+        input_path->push_back(pre_solve_state);
+    }
+    reference_path_->updateBoundsOnInputStates(*grid_map_, *input_path);
     // Solve.
     time_recorder.recordTime("Solving");
-    BaseSolver solver(reference_path_, vehicle_state_, 0, true);
+    BaseSolver solver(reference_path_, vehicle_state_, input_path);
     if (!solver.solve(final_path)) {
         LOG(ERROR) << "Solving failed!";
         reference_path_->logBoundsInfo();
