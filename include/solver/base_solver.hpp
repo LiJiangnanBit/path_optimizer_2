@@ -33,7 +33,7 @@ class BaseSolver {
                                               std::shared_ptr<ReferencePath> reference_path,
                                               std::shared_ptr<VehicleState> vehicle_state);
 
-    virtual bool solve(std::vector<State> *optimized_path);
+    virtual bool solve(std::vector<SlState> *optimized_path);
 
  private:
     // Set Matrices for osqp solver.
@@ -43,7 +43,7 @@ class BaseSolver {
                                 Eigen::VectorXd *lower_bound,
                                 Eigen::VectorXd *upper_bound) const;
     virtual void getOptimizedPath(const Eigen::VectorXd &optimization_result,
-                                  std::vector<State> *optimized_path) const;
+                                  std::vector<SlState> *optimized_path) const;
     std::pair<double, double> getSoftBounds(double lb, double ub, double safety_margin) const;
 
  protected:

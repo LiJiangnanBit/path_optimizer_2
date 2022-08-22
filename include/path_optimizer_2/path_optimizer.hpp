@@ -16,6 +16,7 @@ namespace PathOptimizationNS {
 
 class ReferencePath;
 class State;
+class SlState;
 class Map;
 class CollisionChecker;
 class VehicleState;
@@ -30,7 +31,7 @@ public:
     PathOptimizer &operator=(const PathOptimizer &optimizer) = delete;
 
     // Call this to get the optimized path.
-    bool solve(const std::vector<State> &reference_points, std::vector<State> *final_path);
+    bool solve(const std::vector<State> &reference_points, std::vector<SlState> *final_path);
 
     // Only for visualization purpose.
 //    std::vector<std::tuple<State, double, double>> display_abnormal_bounds() const;
@@ -38,7 +39,7 @@ public:
 
 private:
     // Core function.
-    bool optimizePath(std::vector<State> *final_path);
+    bool optimizePath(std::vector<SlState> *final_path);
 
     // Divide smoothed path into segments.
     bool processReferencePath();
