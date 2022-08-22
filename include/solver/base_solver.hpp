@@ -16,16 +16,16 @@ class Config;
 class ReferencePath;
 class VehicleState;
 class State;
+class SlState;
 
 class BaseSolver {
 
  public:
     BaseSolver() = delete;
 
-    BaseSolver(std::shared_ptr<ReferencePath> reference_path,
-               std::shared_ptr<VehicleState> vehicle_state,
-               int iter_num,
-               bool enable_hard_constraint);
+    BaseSolver(std::shared_ptr<const ReferencePath> reference_path,
+               std::shared_ptr<const VehicleState> vehicle_state,
+               std::shared_ptr<const std::vector<SlState>> input_path);
 
     virtual ~BaseSolver() = default;
 
@@ -48,16 +48,16 @@ class BaseSolver {
 
  protected:
     // Num of knots.
-    const int iter_num_{};
-    bool enable_hard_constraint_{};
     const size_t n_{};
     size_t state_size_{};
     size_t control_size_{};
     size_t slack_size_{};
     size_t vars_size_{};
     size_t cons_size_{};
-    std::shared_ptr<ReferencePath> reference_path_;
-    std::shared_ptr<VehicleState> vehicle_state_;
+    size_t precise_planning_size_{};
+    std::shared_ptr<const ReferencePath> reference_path_;
+    std::shared_ptr<const VehicleState> vehicle_state_;
+    std::shared_ptr<const std::vector<SlState>> input_path_;
     OsqpEigen::Solver solver_;
     double reference_interval_;
 };

@@ -86,4 +86,8 @@ void ReferencePath::setOriginalSpline(const PathOptimizationNS::tk::spline &x_s,
     reference_path_impl_->setOriginalSpline(x_s, y_s, max_s);
 }
 
+void ReferencePath::updateBoundsOnInputStates(const Map &map, std::vector<SlState> &input_sl_states) {
+    reference_path_impl_->updateBoundsOnInputStates(map, input_sl_states);
+}
+
 }

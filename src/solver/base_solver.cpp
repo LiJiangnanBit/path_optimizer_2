@@ -11,20 +11,32 @@
 
 namespace PathOptimizationNS {
 
-BaseSolver::BaseSolver(std::shared_ptr<ReferencePath> reference_path,
-                       std::shared_ptr<VehicleState> vehicle_state,
-                       int iter_num,
-                       bool enable_hard_constraint) :
-    iter_num_(iter_num),
-    enable_hard_constraint_(enable_hard_constraint),
+BaseSolver::BaseSolver(std::shared_ptr<const ReferencePath> reference_path,
+                       std::shared_ptr<const VehicleState> vehicle_state,
+                       std::shared_ptr<const std::vector<SlState>> input_path) :
     n_(reference_path->getSize()),
     reference_path_(reference_path),
-    vehicle_state_(vehicle_state) {
+    vehicle_state_(vehicle_state),
+    input_path_(input_path){
     state_size_ = 3 * n_;
     control_size_ = n_ - 1;
     slack_size_ = 2 * n_;
     vars_size_ = state_size_ + control_size_ + slack_size_;
-    cons_size_ = 6 * n_ + 2 + 2 * n_ * static_cast<int>(enable_hard_constraint);
+    cons_size_ = 6 * n_ + 2;
+    precise_planning_size_ = reference_path_->getReferenceStates().size();
+    const auto precise_planning_iter = std::lower_bound(
+        reference_path_->getReferenceStates().begin(),
+        reference_path_->getReferenceStates().end(),
+        FLAGS_precise_planning_length,
+        [](const State& state, double s){
+          return state.s < s;
+        });
+    if (precise_planning_iter != reference_path_->getReferenceStates().end()) {
+        precise_planning_size_ = std::distance(reference_path_->getReferenceStates().begin(), precise_planning_iter);
+        slack_size_ = precise_planning_size_ + n_;
+        vars_size_ = state_size_ + control_size_ + slack_size_;
+        cons_size_ = 4 * n_ + precise_planning_size_ + n_ + 2 + 2 * n_ * static_cast<int>(enable_hard_constraint);
+    }
 }
 
 std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,

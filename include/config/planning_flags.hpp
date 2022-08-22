@@ -84,4 +84,6 @@ DECLARE_double(search_deviation_cost);
 DECLARE_double(epsilon);
 
 DECLARE_bool(enable_dynamic_segmentation);
+
+DECLARE_double(precise_planning_length);
 #endif //PATH_OPTIMIZER_INCLUDE_PATH_OPTIMIZER_CONFIG_PLANNING_FLAGS_HPP_

@@ -24,6 +24,11 @@ struct State {
     double a{};
 };
 
+struct SlState : State {
+    double l{};
+    double d_heading{};
+};
+
 class Box {
  public:
     enum Dir { LEFT, RIGHT, UNKNOWN };

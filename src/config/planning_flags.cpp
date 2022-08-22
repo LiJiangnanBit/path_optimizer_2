@@ -108,4 +108,6 @@ DEFINE_double(output_spacing, 0.3, "output interval");
 DEFINE_double(epsilon, 1e-6, "use this when comparing double");
 
 DEFINE_bool(enable_dynamic_segmentation, true, "dense segmentation when the curvature is large.");
+
+DEFINE_double(precise_planning_length, 30.0, "More strict collision constraint.");
 /////
