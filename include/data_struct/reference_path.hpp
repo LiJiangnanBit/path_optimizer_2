@@ -40,6 +40,7 @@ class ReferencePath {
     bool buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger);
     bool buildReferenceFromStates(const std::vector<PathOptimizationNS::State> &states);
     std::shared_ptr<VehicleStateBound> isBlocked() const;
+    void updateBoundsOnInputStates(const Map &map, std::vector<SlState> &input_sl_states);
  private:
     std::shared_ptr<ReferencePathImpl> reference_path_impl_;
 };
