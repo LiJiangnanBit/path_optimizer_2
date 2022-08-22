@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
             path_color.b = 0.0;
         }
         visualization_msgs::Marker result_marker =
-            markers.newLineStrip(FLAGS_car_width, "optimized path", id++, path_color, marker_frame_id);
+            markers.newLineStrip(0.5, "optimized path", id++, path_color, marker_frame_id);
         for (size_t i = 0; i != result_path.size(); ++i) {
             geometry_msgs::Point p;
             p.x = result_path[i].x;

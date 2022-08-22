@@ -25,6 +25,21 @@ BaseSolver::BaseSolver(std::shared_ptr<ReferencePath> reference_path,
     slack_size_ = 2 * n_;
     vars_size_ = state_size_ + control_size_ + slack_size_;
     cons_size_ = 6 * n_ + 2 + 2 * n_ * static_cast<int>(enable_hard_constraint);
+    precise_planning_size_ = reference_path_->getReferenceStates().size();
+    const auto precise_planning_iter = std::lower_bound(
+        reference_path_->getReferenceStates().begin(),
+        reference_path_->getReferenceStates().end(),
+        precise_planning_length_,
+        [](const State& state, double s){
+           return state.s < s;
+        });
+    if (precise_planning_iter != reference_path_->getReferenceStates().end()) {
+        precise_planning_size_ = std::distance(reference_path_->getReferenceStates().begin(), precise_planning_iter);
+        slack_size_ = precise_planning_size_ + n_;
+        vars_size_ = state_size_ + control_size_ + slack_size_;
+        cons_size_ = 4 * n_ + precise_planning_size_ + n_ + 2 + 2 * n_ * static_cast<int>(enable_hard_constraint);
+    }
+    LOG(INFO) << "ref length " << reference_path_->getLength();
 }
 
 std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,
@@ -44,7 +59,7 @@ std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,
 
 bool BaseSolver::solve(std::vector<PathOptimizationNS::State> *optimized_path) {
     const auto &ref_states = reference_path_->getReferenceStates();
-    solver_.settings()->setVerbosity(false);
+    solver_.settings()->setVerbosity(true);
     solver_.settings()->setWarmStart(true);
     solver_.data()->setNumberOfVariables(vars_size_);
     solver_.data()->setNumberOfConstraints(cons_size_);
@@ -77,17 +92,23 @@ bool BaseSolver::solve(std::vector<PathOptimizationNS::State> *optimized_path) {
 
 void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
     Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
-    const auto weight_l = 0.1;
+    const auto weight_l = 0.0;
     const auto weight_kappa = 20.0;
     const auto weight_dkappa = 100.0;
     const auto weight_slack = 10;// 1000.0 - 200 * iter_num_;
     for (size_t i = 0; i < n_; ++i) {
         hessian(3 * i, 3 * i) += weight_l;
         hessian(3 * i + 2, 3 * i + 2) += weight_kappa;
-        hessian(state_size_ + control_size_ + 2 * i, state_size_ + control_size_ + 2 * i)
-            += weight_slack;
-        hessian(state_size_ + control_size_ + 2 * i + 1, state_size_ + control_size_ + 2 * i + 1)
-            += weight_slack;
+        if (i < precise_planning_size_) {
+            hessian(state_size_ + control_size_ + 2 * i, state_size_ + control_size_ + 2 * i)
+                += weight_slack;
+            hessian(state_size_ + control_size_ + 2 * i + 1, state_size_ + control_size_ + 2 * i + 1)
+                += weight_slack;
+        } else {
+            size_t local_index = i - precise_planning_size_;
+            size_t slack_var_index = state_size_ + control_size_ + 2 * precise_planning_size_ + local_index;
+            hessian(slack_var_index, slack_var_index) += weight_slack;
+        }
         if (i != n_ - 1) {
             hessian(state_size_ + i, state_size_ + i) += weight_dkappa;
         }
@@ -101,8 +122,9 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     const auto &ref_states = reference_path_->getReferenceStates();
     const auto trans_idx = 0;
     const auto kappa_idx = trans_idx + 3 * n_;
-    const auto collision_idx = kappa_idx + n_;
-    const auto end_state_idx = collision_idx + 2 * n_;
+    const auto precise_collision_idx = kappa_idx + n_;
+    const auto rough_collision_idx = precise_collision_idx + 2 * precise_planning_size_;
+    const auto end_state_idx = rough_collision_idx + n_ - precise_planning_size_;
     const auto hard_constraint_idx = end_state_idx + 2;
     Eigen::MatrixXd cons = Eigen::MatrixXd::Zero(cons_size_, vars_size_);
     // Set transition part. Ax + Bu + C = 0.
@@ -139,8 +161,14 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     Eigen::Matrix<double, 2, 2> slack_coeff;
     slack_coeff << 1, 0, 0, 1;
     for (size_t i = 0; i < n_; ++i) {
-        cons.block(collision_idx + 2 * i, 3 * i, 2, 2) = collision_coeff;
-        cons.block(collision_idx + 2 * i, state_size_ + control_size_ + 2 * i, 2, 2) = slack_coeff;
+        if (i < precise_planning_size_) {
+            cons.block(precise_collision_idx + 2 * i, 3 * i, 2, 2) = collision_coeff;
+            cons.block(precise_collision_idx + 2 * i, state_size_ + control_size_ + 2 * i, 2, 2) = slack_coeff;
+        } else {
+            size_t local_index = i - precise_planning_size_;
+            cons(rough_collision_idx + local_index, 3 * i) = 1;
+            cons(rough_collision_idx + local_index, state_size_ + control_size_ + 2 * precise_planning_size_ + local_index) = 1;
+        }
     }
     // End state.
     cons(end_state_idx, state_size_ - 3) = 1; // end l
@@ -174,12 +202,19 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     // Collision.
     const auto &bounds = reference_path_->getBounds();
     for (size_t i = 0; i < n_; ++i) {
-        const auto front_bounds = getSoftBounds(bounds[i].front.lb, bounds[i].front.ub, FLAGS_expected_safety_margin);
-        const auto rear_bounds = getSoftBounds(bounds[i].rear.lb, bounds[i].rear.ub, FLAGS_expected_safety_margin);
-        (*lower_bound)(collision_idx + 2 * i, 0) = front_bounds.first;
-        (*upper_bound)(collision_idx + 2 * i, 0) = front_bounds.second;
-        (*lower_bound)(collision_idx + 2 * i + 1, 0) = rear_bounds.first;
-        (*upper_bound)(collision_idx + 2 * i + 1, 0) = rear_bounds.second;
+        if (i < precise_planning_size_) {
+            const auto front_bounds = getSoftBounds(bounds[i].front.lb, bounds[i].front.ub, FLAGS_expected_safety_margin);
+            const auto rear_bounds = getSoftBounds(bounds[i].rear.lb, bounds[i].rear.ub, FLAGS_expected_safety_margin);
+            (*lower_bound)(precise_collision_idx + 2 * i, 0) = front_bounds.first;
+            (*upper_bound)(precise_collision_idx + 2 * i, 0) = front_bounds.second;
+            (*lower_bound)(precise_collision_idx + 2 * i + 1, 0) = rear_bounds.first;
+            (*upper_bound)(precise_collision_idx + 2 * i + 1, 0) = rear_bounds.second;
+        } else {
+            const auto center_bounds = getSoftBounds(bounds[i].center.lb, bounds[i].center.ub, FLAGS_expected_safety_margin);
+            size_t local_index = i - precise_planning_size_;
+            (*lower_bound)(rough_collision_idx + local_index, 0) = center_bounds.first;
+            (*upper_bound)(rough_collision_idx + local_index, 0) = center_bounds.second;
+        }
     }
     // End state.
     (*lower_bound)(end_state_idx) = -1.0; //-OsqpEigen::INFTY;
@@ -219,7 +254,11 @@ void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
             tmp_s += sqrt(pow(tmp_x - optimized_path->back().x, 2) + pow(tmp_y - optimized_path->back().y, 2));
         }
         optimized_path->emplace_back(tmp_x, tmp_y, constrainAngle(angle + optimization_result(3 * i + 1)), k, tmp_s);
+        LOG(INFO) << "Opt pt " << i << " l: " << optimization_result(3 * i)
+            << ", dtheta: " << optimization_result(3 * i + 1)
+            << ", kappa: " <<  optimization_result(3 * i + 2);
     }
+
 }
 
 std::pair<double, double> BaseSolver::getSoftBounds(double lb, double ub, double safety_margin) const {

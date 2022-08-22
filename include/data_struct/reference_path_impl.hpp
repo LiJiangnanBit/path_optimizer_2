@@ -54,6 +54,7 @@ class ReferencePathImpl {
     std::shared_ptr<tk::spline> x_s_;
     std::shared_ptr<tk::spline> y_s_;
     double max_s_{};
+    double precise_s_{};
     // Raw ref line.
     std::shared_ptr<tk::spline> original_x_s_;
     std::shared_ptr<tk::spline> original_y_s_;

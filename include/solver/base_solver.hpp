@@ -59,7 +59,9 @@ class BaseSolver {
     std::shared_ptr<ReferencePath> reference_path_;
     std::shared_ptr<VehicleState> vehicle_state_;
     OsqpEigen::Solver solver_;
-    double reference_interval_;
+    double reference_interval_{};
+    double precise_planning_length_{20.0};
+    size_t precise_planning_size_{};
 };
 
 }

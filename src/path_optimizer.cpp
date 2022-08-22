@@ -117,7 +117,7 @@ bool PathOptimizer::processReferencePath() {
     }
     setReferencePathLength();
 
-    reference_path_->buildReferenceFromSpline(FLAGS_output_spacing / 2.0, FLAGS_output_spacing);
+    reference_path_->buildReferenceFromSpline(FLAGS_output_spacing, 0.5);
     reference_path_->updateBounds(*grid_map_);
     return true;
 }
@@ -147,12 +147,28 @@ bool PathOptimizer::optimizePath(std::vector<State> *final_path) {
     vehicle_state_->setInitError(0.0, 0.0);
     // Solve.
     time_recorder.recordTime("Solving");
-    BaseSolver solver(reference_path_, vehicle_state_, 0, true);
+    BaseSolver solver(reference_path_, vehicle_state_, 0, false);
     if (!solver.solve(final_path)) {
         LOG(ERROR) << "Solving failed!";
         reference_path_->logBoundsInfo();
         return false;
     }
+    // test
+
+    reference_path_->buildReferenceFromStates(*final_path);
+    reference_path_->updateBounds(*grid_map_);
+    vehicle_state_->setStartState(final_path->front());
+    vehicle_state_->setTargetState(final_path->back());
+    vehicle_state_->setInitError(0.0, 0.0);
+    // Solve.
+    time_recorder.recordTime("Solving");
+    BaseSolver solver_2(reference_path_, vehicle_state_, 0, false);
+    if (!solver_2.solve(final_path)) {
+        LOG(ERROR) << "Solving failed!";
+        reference_path_->logBoundsInfo();
+        return false;
+    }
+    // test
     time_recorder.recordTime("end");
     time_recorder.printTime();
     return true;

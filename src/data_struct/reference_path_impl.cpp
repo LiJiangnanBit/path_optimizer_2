@@ -17,7 +17,8 @@ ReferencePathImpl::ReferencePathImpl() :
     y_s_(new tk::spline),
     original_x_s_(new tk::spline),
     original_y_s_(new tk::spline),
-    blocked_bound_(nullptr) {}
+    blocked_bound_(nullptr),
+    precise_s_(30.0) {}
 
 const tk::spline &ReferencePathImpl::getXS() const {
     return *x_s_;
@@ -153,8 +154,10 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
         offset = global2Local(rear_center, rear_center_directional_projection).y;
         rear_bound[0] += offset;
         rear_bound[1] += offset;
+        auto center_bound = getClearanceWithDirectionStrict(state, map);
         vehicle_state_bound.front.set(front_bound, front_center);
         vehicle_state_bound.rear.set(rear_bound, rear_center);
+        vehicle_state_bound.center.set(center_bound, state);
         if (isEqual(front_bound[0], front_bound[1]) || isEqual(rear_bound[0], rear_bound[1])) {
             LOG(INFO) << "Path is blocked at s: " << state.s;
             blocked_bound_.reset(new VehicleStateBound(vehicle_state_bound));
@@ -260,6 +263,7 @@ bool ReferencePathImpl::buildReferenceFromSpline(double delta_s_smaller, double 
     const double small_k = 0.08;
     double tmp_s = 0;
     while (tmp_s <= max_s_) {
+        double ds = tmp_s < precise_s_ ? delta_s_smaller : delta_s_larger;
         double x = (*x_s_)(tmp_s);
         double y = (*y_s_)(tmp_s);
         double h = getHeading(*x_s_, *y_s_, tmp_s);
@@ -269,8 +273,8 @@ bool ReferencePathImpl::buildReferenceFromSpline(double delta_s_smaller, double 
         if (FLAGS_enable_dynamic_segmentation) {
             double k_share = fabs(k) > large_k ? 1 :
                              fabs(k) < small_k ? 0 : (fabs(k) - small_k) / (large_k - small_k);
-            tmp_s += delta_s_larger - k_share * (delta_s_larger - delta_s_smaller);
-        } else tmp_s += delta_s_larger;
+            tmp_s += ds - k_share * ds / 2.0;
+        } else tmp_s += ds;
     }
     return true;
 }

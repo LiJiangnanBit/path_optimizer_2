@@ -82,7 +82,7 @@ struct VehicleStateBound {
         double ub{}; // left
         double lb{}; // right
         double x{}, y{}, heading{};
-    } front, rear;
+    } front, rear, center;
 };
 
 // Point for A* search.
