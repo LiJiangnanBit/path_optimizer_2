@@ -125,7 +125,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
     CHECK_NOTNULL(final_path);
     final_path->clear();
     // TODO: remove arg: iter_num.
-    std::shared_ptr<std::vector<SlState>> input_path = std::make_shared<std::vector<SlState>>();
+    std::vector<SlState> input_path;
     for (const auto &ref_state : reference_path_->getReferenceStates()) {
         SlState input_state;
         input_state.x = ref_state.x;
@@ -133,27 +133,24 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         input_state.heading = ref_state.heading;
         input_state.s = ref_state.s;
         input_state.k = ref_state.k;
-        input_path->push_back(input_state);
+        input_path.push_back(input_state);
     }
-    BaseSolver pre_solver(reference_path_, vehicle_state_, input_path);
+    BaseSolver solver(*reference_path_, *vehicle_state_, input_path);
     TimeRecorder time_recorder;
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");
-    if (!pre_solver.solve(final_path)) {
+    if (!solver.solve(final_path)) {
         LOG(ERROR) << "Pre solving failed!";
         reference_path_->logBoundsInfo();
         return false;
     }
     time_recorder.recordTime("Update ref");
-    input_path->clear();
-    for (const auto &pre_solve_state : *final_path) {
-        input_path->push_back(pre_solve_state);
-    }
-    reference_path_->updateBoundsOnInputStates(*grid_map_, *input_path);
+    // reference_path_->updateBoundsOnInputStates(*grid_map_, *input_path);
     // Solve.
     time_recorder.recordTime("Solving");
-    BaseSolver solver(reference_path_, vehicle_state_, input_path);
-    if (!solver.solve(final_path)) {
+    BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);
+    if (!post_solver.solve(final_path)) {
+    // if (!solver.updateProblemFormulationAndSolve(*final_path, final_path)) {
         LOG(ERROR) << "Solving failed!";
         reference_path_->logBoundsInfo();
         return false;
