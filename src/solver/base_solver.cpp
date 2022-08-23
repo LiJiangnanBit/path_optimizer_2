@@ -58,21 +58,20 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
     solver_.data()->setNumberOfVariables(vars_size_);
     solver_.data()->setNumberOfConstraints(cons_size_);
     // Allocate QP problem matrices and vectors.
-    Eigen::SparseMatrix<double> hessian;
-    Eigen::VectorXd gradient = Eigen::VectorXd::Zero(vars_size_);
+    gradient_ = Eigen::VectorXd::Zero(vars_size_);
     // Eigen::SparseMatrix<double> linearMatrix;
     // Eigen::VectorXd lowerBound;
     // Eigen::VectorXd upperBound;
     // Set Hessian matrix.
-    setCost(&hessian);
+    setCost(&hessian_);
     // Set state transition matrix, constraint matrix and bound vector.
     setConstraints(
         &linear_matrix_,
         &lower_bound_,
         &upper_bound_);
     // Input to solver.
-    if (!solver_.data()->setHessianMatrix(hessian)) return false;
-    if (!solver_.data()->setGradient(gradient)) return false;
+    if (!solver_.data()->setHessianMatrix(hessian_)) return false;
+    if (!solver_.data()->setGradient(gradient_)) return false;
     if (!solver_.data()->setLinearConstraintsMatrix(linear_matrix_)) return false;
     if (!solver_.data()->setLowerBound(lower_bound_)) return false;
     if (!solver_.data()->setUpperBound(upper_bound_)) return false;
@@ -86,9 +85,6 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
 
 bool BaseSolver::updateProblemFormulationAndSolve(const std::vector<SlState> &input_path, std::vector<SlState> *optimized_path) {
     input_path_ = input_path;
-    // Eigen::SparseMatrix<double> linearMatrix;
-    // Eigen::VectorXd lowerBound;
-    // Eigen::VectorXd upperBound;
     // Set state transition matrix, constraint matrix and bound vector.
     setConstraints(
         &linear_matrix_,
@@ -97,14 +93,8 @@ bool BaseSolver::updateProblemFormulationAndSolve(const std::vector<SlState> &in
     for (int i = 0; i < 10; ++i) {
         std::cout << "i " << i << " lb " << lower_bound_(i,0) << ", ub " << upper_bound_(i,0) << std::endl;
     }
-    LOG(INFO) << "111";
     if (!solver_.updateBounds(lower_bound_, upper_bound_)) return false;
-    LOG(INFO) << "222";
     if (!solver_.updateLinearConstraintsMatrix(linear_matrix_)) return false;
-    LOG(INFO) << "333";
-    // if (!solver_.data()->setLinearConstraintsMatrix(linearMatrix)) return false;
-    // if (!solver_.data()->setLowerBound(lowerBound)) return false;
-    // if (!solver_.data()->setUpperBound(upperBound)) return false;
     // Solve.
     if (!solver_.solve()) return false;
     const auto &QPSolution = solver_.getSolution();
@@ -214,9 +204,11 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
         upper_bound->block(3 * (i + 1), 0, 3, 1) = -c_list[i];
     }
     // Kappa.
+    const double kappa_limit = tan(FLAGS_max_steering_angle) / FLAGS_wheel_base;
+    LOG(INFO) << "kappa limit " << kappa_limit;
     for (size_t i = 0; i < n_; ++i) {
-        (*lower_bound)(kappa_idx + i) = -tan(FLAGS_max_steering_angle) / FLAGS_wheel_base;
-        (*upper_bound)(kappa_idx + i) = tan(FLAGS_max_steering_angle) / FLAGS_wheel_base;
+        (*lower_bound)(kappa_idx + i) = -kappa_limit;
+        (*upper_bound)(kappa_idx + i) = kappa_limit;
     }
     // Collision.
     const auto &bounds = reference_path_.getBounds();
@@ -272,7 +264,7 @@ void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
             tmp_s += sqrt(pow(result_pt.x - optimized_path->back().x, 2) + pow(result_pt.y - optimized_path->back().y, 2));
         }
         optimized_path->push_back(result_pt);
-        LOG(INFO) << "idx " << i << " l diff with input " << result_pt.l - input_path_.at(i).l << ", input l " << input_path_.at(i).l << ", opt l" << result_pt.l;
+        // LOG(INFO) << "idx " << i << " l diff with input " << result_pt.l - input_path_.at(i).l << ", input l " << input_path_.at(i).l << ", opt l" << result_pt.l;
     }
 }
 

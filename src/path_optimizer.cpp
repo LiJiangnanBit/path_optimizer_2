@@ -148,9 +148,9 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
     // reference_path_->updateBoundsOnInputStates(*grid_map_, *input_path);
     // Solve.
     time_recorder.recordTime("Solving");
-    BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);
-    if (!post_solver.solve(final_path)) {
-    // if (!solver.updateProblemFormulationAndSolve(*final_path, final_path)) {
+    // BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);
+    // if (!post_solver.solve(final_path)) {
+    if (!solver.updateProblemFormulationAndSolve(*final_path, final_path)) {
         LOG(ERROR) << "Solving failed!";
         reference_path_->logBoundsInfo();
         return false;

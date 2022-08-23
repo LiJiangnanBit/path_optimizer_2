@@ -64,6 +64,8 @@ class BaseSolver {
     Eigen::SparseMatrix<double> linear_matrix_;
     Eigen::VectorXd lower_bound_;
     Eigen::VectorXd upper_bound_;
+    Eigen::SparseMatrix<double> hessian_;
+    Eigen::VectorXd gradient_;
 };
 
 }
