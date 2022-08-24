@@ -349,6 +349,7 @@ bool ReferencePathImpl::buildReferenceFromStates(const std::vector<PathOptimizat
     x_s.set_points(s_set, x_set);
     y_s.set_points(s_set, y_set);
     setSpline(x_s, y_s, max_s_);
+    return true;
 }
 
 std::shared_ptr<VehicleStateBound> ReferencePathImpl::isBlocked() const {
