@@ -8,6 +8,7 @@
 #include "config/planning_flags.hpp"
 #include "data_struct/vehicle_state_frenet.hpp"
 #include "tools/tools.hpp"
+#include "tools/time_recorder.h"
 
 namespace PathOptimizationNS {
 
@@ -53,8 +54,12 @@ std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,
 }
 
 bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
-    solver_.settings()->setVerbosity(false);
+    TimeRecorder time_recorder;
+    time_recorder.recordTime("Set cost and cons");
+    solver_.settings()->setVerbosity(true);
     solver_.settings()->setWarmStart(true);
+    solver_.settings()->setAbsoluteTolerance(2e-3);
+    solver_.settings()->setRelativeTolerance(2e-3);
     solver_.data()->setNumberOfVariables(vars_size_);
     solver_.data()->setNumberOfConstraints(cons_size_);
     // Allocate QP problem matrices and vectors.
@@ -76,10 +81,14 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
     if (!solver_.data()->setLowerBound(lower_bound_)) return false;
     if (!solver_.data()->setUpperBound(upper_bound_)) return false;
     // Solve.
+    time_recorder.recordTime("OSQP Solve");
     if (!solver_.initSolver()) return false;
     if (!solver_.solve()) return false;
     const auto &QPSolution = solver_.getSolution();
+    time_recorder.recordTime("Retrive path");
     getOptimizedPath(QPSolution, optimized_path);
+    time_recorder.recordTime("end");
+    time_recorder.printTime();
     return true;
 }
 
