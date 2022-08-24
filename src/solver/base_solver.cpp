@@ -35,7 +35,7 @@ BaseSolver::BaseSolver(const ReferencePath &reference_path,
     slack_size_ = precise_planning_size_ + n_;
     vars_size_ = state_size_ + control_size_ + slack_size_;
     cons_size_ = 4 * n_ + precise_planning_size_ + n_ + 2;
-    LOG(INFO) << "precise_planning_size_ " << precise_planning_size_;
+    LOG(INFO) << "Ref length " << reference_path_.getLength() << ", precise_planning_size_ " << precise_planning_size_;
 }
 
 std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,
@@ -54,8 +54,8 @@ std::unique_ptr<BaseSolver> BaseSolver::create(std::string &type,
 }
 
 bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
-    TimeRecorder time_recorder;
-    time_recorder.recordTime("Set cost and cons");
+    TimeRecorder time_recorder("First Solver");
+    time_recorder.recordTime("Set cost");
     solver_.settings()->setVerbosity(true);
     solver_.settings()->setWarmStart(true);
     solver_.settings()->setAbsoluteTolerance(2e-3);
@@ -69,11 +69,13 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
     // Eigen::VectorXd upperBound;
     // Set Hessian matrix.
     setCost(&hessian_);
+    time_recorder.recordTime("Set constraints");
     // Set state transition matrix, constraint matrix and bound vector.
     setConstraints(
         &linear_matrix_,
         &lower_bound_,
         &upper_bound_);
+    time_recorder.recordTime("Set solver");
     // Input to solver.
     if (!solver_.data()->setHessianMatrix(hessian_)) return false;
     if (!solver_.data()->setGradient(gradient_)) return false;
@@ -93,25 +95,30 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
 }
 
 bool BaseSolver::updateProblemFormulationAndSolve(const std::vector<SlState> &input_path, std::vector<SlState> *optimized_path) {
+    TimeRecorder time_recorder("Second Solver");
+    time_recorder.recordTime("Set constraints");
     input_path_ = input_path;
     // Set state transition matrix, constraint matrix and bound vector.
     setConstraints(
         &linear_matrix_,
         &lower_bound_,
         &upper_bound_);
-    for (int i = 0; i < 10; ++i) {
-        std::cout << "i " << i << " lb " << lower_bound_(i,0) << ", ub " << upper_bound_(i,0) << std::endl;
-    }
     if (!solver_.updateBounds(lower_bound_, upper_bound_)) return false;
     if (!solver_.updateLinearConstraintsMatrix(linear_matrix_)) return false;
     // Solve.
+    time_recorder.recordTime("OSQP Solve");
     if (!solver_.solve()) return false;
+    time_recorder.recordTime("Retrive path");
     const auto &QPSolution = solver_.getSolution();
     getOptimizedPath(QPSolution, optimized_path);
+    time_recorder.recordTime("end");
+    time_recorder.printTime();
     return true;
 }
 
 void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
+    TimeRecorder time_recorder("Set Cost");
+    time_recorder.recordTime("set heassian");
     Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
     const double weight_l = 0.0;
     const double weight_kappa = 20.0;
@@ -134,7 +141,10 @@ void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
             hessian(state_size_ + i, state_size_ + i) += weight_dkappa;
         }
     }
+    time_recorder.recordTime("return matrix");
     *matrix_h = hessian.sparseView();
+    time_recorder.recordTime("end");
+    time_recorder.printTime();
 }
 
 void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,

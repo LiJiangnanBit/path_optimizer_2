@@ -38,7 +38,7 @@ bool PathOptimizer::solve(const std::vector<State> &reference_points, std::vecto
         return false;
     }
 
-    TimeRecorder time_recorder;
+    TimeRecorder time_recorder("Outer Solve Function");
     time_recorder.recordTime("reference path smoothing");
     // Smooth reference path.
     // TODO: refactor this part!
@@ -136,7 +136,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         input_path.push_back(input_state);
     }
     BaseSolver solver(*reference_path_, *vehicle_state_, input_path);
-    TimeRecorder time_recorder;
+    TimeRecorder time_recorder("Optimize Path Function");
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");
     if (!solver.solve(final_path)) {
