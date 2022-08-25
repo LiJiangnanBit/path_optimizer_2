@@ -22,15 +22,15 @@ BaseSolver::BaseSolver(const ReferencePath &reference_path,
     state_size_ = 3 * n_;
     control_size_ = n_ - 1;
     precise_planning_size_ = input_path.size();
-    const auto precise_planning_iter = std::lower_bound(
-        input_path.begin(),
-        input_path.end(),
-        FLAGS_precise_planning_length,
-        [](const SlState& state, double s){
-          return state.s < s;
-        });
-    if (precise_planning_iter != input_path.end()) {
+    if (FLAGS_rough_constraints_far_away && precise_planning_iter != input_path.end()) {
         precise_planning_size_ = std::distance(input_path.begin(), precise_planning_iter);
+        const auto precise_planning_iter = std::lower_bound(
+            input_path.begin(),
+            input_path.end(),
+            FLAGS_precise_planning_length,
+            [](const SlState& state, double s){
+            return state.s < s;
+            });
     }
     slack_size_ = precise_planning_size_ + n_;
     vars_size_ = state_size_ + control_size_ + slack_size_;
