@@ -22,8 +22,7 @@ BaseSolver::BaseSolver(const ReferencePath &reference_path,
     state_size_ = 3 * n_;
     control_size_ = n_ - 1;
     precise_planning_size_ = input_path.size();
-    if (FLAGS_rough_constraints_far_away && precise_planning_iter != input_path.end()) {
-        precise_planning_size_ = std::distance(input_path.begin(), precise_planning_iter);
+    if (FLAGS_rough_constraints_far_away) {
         const auto precise_planning_iter = std::lower_bound(
             input_path.begin(),
             input_path.end(),
@@ -31,6 +30,7 @@ BaseSolver::BaseSolver(const ReferencePath &reference_path,
             [](const SlState& state, double s){
             return state.s < s;
             });
+        precise_planning_size_ = std::distance(input_path.begin(), precise_planning_iter);
     }
     slack_size_ = precise_planning_size_ + n_;
     vars_size_ = state_size_ + control_size_ + slack_size_;
