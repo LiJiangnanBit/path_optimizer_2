@@ -57,7 +57,9 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
     TimeRecorder time_recorder("First Solver");
     time_recorder.recordTime("Set cost");
     solver_.settings()->setVerbosity(true);
+    solver_.settings()->setPolish(false);
     solver_.settings()->setWarmStart(true);
+    solver_.settings()->setMaxIteration(1000);
     solver_.settings()->setAbsoluteTolerance(2e-3);
     solver_.settings()->setRelativeTolerance(2e-3);
     solver_.data()->setNumberOfVariables(vars_size_);
@@ -283,6 +285,7 @@ void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
             tmp_s += sqrt(pow(result_pt.x - optimized_path->back().x, 2) + pow(result_pt.y - optimized_path->back().y, 2));
         }
         optimized_path->push_back(result_pt);
+        // LOG(INFO) << "result values: " << optimization_result(3 * i) << ", " << optimization_result(3 * i + 1) << ", " << optimization_result(3 * i + 2) << ", " << optimization_result(3 * n_ + i);
         // LOG(INFO) << "idx " << i << " l diff with input " << result_pt.l - input_path_.at(i).l << ", input l " << input_path_.at(i).l << ", opt l" << result_pt.l;
     }
 }
