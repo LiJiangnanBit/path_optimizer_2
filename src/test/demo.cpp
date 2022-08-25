@@ -188,7 +188,8 @@ int main(int argc, char **argv) {
         markers.append(end_marker);
 
         // Calculate.
-        std::vector<PathOptimizationNS::State> result_path, smoothed_reference_path, result_path_by_boxes;
+        std::vector<PathOptimizationNS::SlState> result_path;
+        std::vector<PathOptimizationNS::State> smoothed_reference_path, result_path_by_boxes;
         std::vector<std::vector<double>> a_star_display(3);
         bool opt_ok = false;
         if (reference_rcv && start_state_rcv && end_state_rcv) {
@@ -220,7 +221,7 @@ int main(int argc, char **argv) {
             path_color.b = 0.0;
         }
         visualization_msgs::Marker result_marker =
-            markers.newLineStrip(FLAGS_car_width, "optimized path", id++, path_color, marker_frame_id);
+            markers.newLineStrip(0.5, "optimized path", id++, path_color, marker_frame_id);
         for (size_t i = 0; i != result_path.size(); ++i) {
             geometry_msgs::Point p;
             p.x = result_path[i].x;
@@ -357,6 +358,21 @@ int main(int argc, char **argv) {
             rear_bounds_marker.points.emplace_back(p);
         }
         markers.append(rear_bounds_marker);
+
+        visualization_msgs::Marker center_bounds_marker =
+            markers.newSphereList(0.25, "center bounds", id++, ros_viz_tools::CYAN, marker_frame_id);
+        for (const auto &bound : reference_path_opt.getBounds()) {
+            const auto &center_bounds = bound.center;
+            geometry_msgs::Point p;
+            p.x = center_bounds.x + center_bounds.lb * cos(center_bounds.heading + M_PI_2);
+            p.y = center_bounds.y + center_bounds.lb * sin(center_bounds.heading + M_PI_2);
+            p.z = 1.0;
+            center_bounds_marker.points.emplace_back(p);
+            p.x = center_bounds.x + center_bounds.ub * cos(center_bounds.heading + M_PI_2);
+            p.y = center_bounds.y + center_bounds.ub * sin(center_bounds.heading + M_PI_2);
+            center_bounds_marker.points.emplace_back(p);
+        }
+        markers.append(center_bounds_marker);
 
         // Publish the grid_map.
         grid_map.setTimestamp(time.toNSec());

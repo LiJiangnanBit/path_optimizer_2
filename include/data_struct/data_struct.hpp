@@ -19,9 +19,16 @@ struct State {
     double y{};
     double heading{};
     double k{}; // Curvature.
+    double d_k{};
     double s{};
     double v{};
     double a{};
+};
+
+struct SlState : public State {
+    SlState() = default;
+    double l{};
+    double d_heading{};
 };
 
 class Box {
@@ -82,7 +89,7 @@ struct VehicleStateBound {
         double ub{}; // left
         double lb{}; // right
         double x{}, y{}, heading{};
-    } front, rear;
+    } front, rear, center;
 };
 
 // Point for A* search.

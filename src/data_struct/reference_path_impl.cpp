@@ -114,6 +114,66 @@ State ReferencePathImpl::getApproxState(const State &original_state, const State
     return ret;
 }
 
+void ReferencePathImpl::updateBoundsOnInputStates(const Map &map, std::vector<SlState> &input_sl_states) {
+    CHECK_LE(input_sl_states.size(), reference_states_.size());
+    if (reference_states_.empty()) {
+        LOG(WARNING) << "Empty reference, updateBounds fail!";
+        return;
+    }
+    bounds_.clear();
+    VehicleStateBound vehicle_state_bound;
+    for (size_t i = 0; i < input_sl_states.size(); ++i) {
+        const State& ref_state = reference_states_.at(i);
+        const SlState& input_state = input_sl_states.at(i);
+        const double front_length_new = FLAGS_front_length - FLAGS_front_length * cos(input_state.d_heading);
+        const double rear_length_new = FLAGS_rear_length - FLAGS_rear_length * cos(input_state.d_heading);
+        // Front and rear bounds.
+        State front_center(ref_state.x + front_length_new * cos(ref_state.heading),
+                           ref_state.y + front_length_new * sin(ref_state.heading),
+                           ref_state.heading);
+        State rear_center(ref_state.x + rear_length_new * cos(ref_state.heading),
+                          ref_state.y + rear_length_new * sin(ref_state.heading),
+                          ref_state.heading);
+        auto front_center_directional_projection = getDirectionalProjectionByNewton(*x_s_,
+                                                                                    *y_s_,
+                                                                                    front_center.x,
+                                                                                    front_center.y,
+                                                                                    ref_state.heading + M_PI_2,
+                                                                                    ref_state.s + 5.0,
+                                                                                    ref_state.s + FLAGS_front_length);
+        auto rear_center_directional_projection = getDirectionalProjectionByNewton(*x_s_,
+                                                                                   *y_s_,
+                                                                                   rear_center.x,
+                                                                                   rear_center.y,
+                                                                                   ref_state.heading + M_PI_2,
+                                                                                   ref_state.s + 5.0,
+                                                                                   ref_state.s + FLAGS_rear_length);
+        front_center_directional_projection.heading = rear_center_directional_projection.heading = ref_state.heading;
+        // Calculate boundaries.
+        auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map);
+        auto offset = global2Local(front_center, front_center_directional_projection).y;
+        front_bound[0] += offset;
+        front_bound[1] += offset;
+        auto rear_bound = getClearanceWithDirectionStrict(rear_center_directional_projection, map);
+        offset = global2Local(rear_center, rear_center_directional_projection).y;
+        rear_bound[0] += offset;
+        rear_bound[1] += offset;
+        auto center_bound = getClearanceWithDirectionStrict(ref_state, map);
+        vehicle_state_bound.front.set(front_bound, front_center);
+        vehicle_state_bound.rear.set(rear_bound, rear_center);
+        vehicle_state_bound.center.set(center_bound, ref_state);
+        if (isEqual(front_bound[0], front_bound[1]) || isEqual(rear_bound[0], rear_bound[1])) {
+            LOG(INFO) << "Path is blocked at s: " << ref_state.s;
+            blocked_bound_.reset(new VehicleStateBound(vehicle_state_bound));
+            break;
+        }
+        bounds_.emplace_back(vehicle_state_bound);
+    }
+    if (reference_states_.size() != bounds_.size()) {
+        reference_states_.resize(bounds_.size());
+    }
+}
+
 void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map) {
     if (reference_states_.empty()) {
         LOG(WARNING) << "Empty reference, updateBounds fail!";
@@ -153,8 +213,10 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
         offset = global2Local(rear_center, rear_center_directional_projection).y;
         rear_bound[0] += offset;
         rear_bound[1] += offset;
+        auto center_bound = getClearanceWithDirectionStrict(state, map);
         vehicle_state_bound.front.set(front_bound, front_center);
         vehicle_state_bound.rear.set(rear_bound, rear_center);
+        vehicle_state_bound.center.set(center_bound, state);
         if (isEqual(front_bound[0], front_bound[1]) || isEqual(rear_bound[0], rear_bound[1])) {
             LOG(INFO) << "Path is blocked at s: " << state.s;
             blocked_bound_.reset(new VehicleStateBound(vehicle_state_bound));
@@ -287,6 +349,7 @@ bool ReferencePathImpl::buildReferenceFromStates(const std::vector<PathOptimizat
     x_s.set_points(s_set, x_set);
     y_s.set_points(s_set, y_set);
     setSpline(x_s, y_s, max_s_);
+    return true;
 }
 
 std::shared_ptr<VehicleStateBound> ReferencePathImpl::isBlocked() const {

@@ -17,12 +17,14 @@ void TimeRecorder::printTime() const {
         LOG(WARNING) << "time stamps size not enough!";
         return;
     }
+    LOG(INFO) << "========Printing time for " << title_ << "========";
     for (size_t i = 0; i < time_stamps_.size() - 1; ++i) {
         LOG(INFO) << names_[i] << " cost " << time_ms(time_stamps_[i], time_stamps_[i + 1]) << " ms.";
     }
     if (time_stamps_.size() > 2) {
         LOG(INFO) << "Total time cost: " << time_ms(time_stamps_.front(), time_stamps_.back()) << " ms.";
     }
+    LOG(INFO) << "========End printing time for " << title_ << "========";
 }
 
 void TimeRecorder::clear() {

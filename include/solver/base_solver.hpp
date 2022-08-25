@@ -16,16 +16,16 @@ class Config;
 class ReferencePath;
 class VehicleState;
 class State;
+class SlState;
 
 class BaseSolver {
 
  public:
     BaseSolver() = delete;
 
-    BaseSolver(std::shared_ptr<ReferencePath> reference_path,
-               std::shared_ptr<VehicleState> vehicle_state,
-               int iter_num,
-               bool enable_hard_constraint);
+    BaseSolver(const ReferencePath &reference_path,
+               const VehicleState &vehicle_state,
+               const std::vector<SlState> &input_path);
 
     virtual ~BaseSolver() = default;
 
@@ -33,7 +33,9 @@ class BaseSolver {
                                               std::shared_ptr<ReferencePath> reference_path,
                                               std::shared_ptr<VehicleState> vehicle_state);
 
-    virtual bool solve(std::vector<State> *optimized_path);
+    virtual bool solve(std::vector<SlState> *optimized_path);
+
+    virtual bool updateProblemFormulationAndSolve(const std::vector<SlState> &input_path, std::vector<SlState> *optimized_path);
 
  private:
     // Set Matrices for osqp solver.
@@ -43,23 +45,27 @@ class BaseSolver {
                                 Eigen::VectorXd *lower_bound,
                                 Eigen::VectorXd *upper_bound) const;
     virtual void getOptimizedPath(const Eigen::VectorXd &optimization_result,
-                                  std::vector<State> *optimized_path) const;
+                                  std::vector<SlState> *optimized_path) const;
     std::pair<double, double> getSoftBounds(double lb, double ub, double safety_margin) const;
-
  protected:
     // Num of knots.
-    const int iter_num_{};
-    bool enable_hard_constraint_{};
     const size_t n_{};
     size_t state_size_{};
     size_t control_size_{};
     size_t slack_size_{};
     size_t vars_size_{};
     size_t cons_size_{};
-    std::shared_ptr<ReferencePath> reference_path_;
-    std::shared_ptr<VehicleState> vehicle_state_;
+    size_t precise_planning_size_{};
+    const ReferencePath &reference_path_;
+    const VehicleState &vehicle_state_;
+    std::vector<SlState> input_path_; // TODO: use pointer.
     OsqpEigen::Solver solver_;
     double reference_interval_;
+    Eigen::SparseMatrix<double> linear_matrix_;
+    Eigen::VectorXd lower_bound_;
+    Eigen::VectorXd upper_bound_;
+    Eigen::SparseMatrix<double> hessian_;
+    Eigen::VectorXd gradient_;
 };
 
 }

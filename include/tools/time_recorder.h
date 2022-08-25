@@ -13,12 +13,13 @@ namespace PathOptimizationNS {
 
 class TimeRecorder {
  public:
-    TimeRecorder() = default;
+    TimeRecorder(const std::string& title) : title_(title) {}
     void recordTime(const std::string &name);
     void printTime() const;
     void clear();
 
  private:
+    std::string title_;
     std::vector<std::string> names_;
     std::vector<clock_t> time_stamps_;
 };
