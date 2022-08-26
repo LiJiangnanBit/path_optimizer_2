@@ -217,15 +217,7 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
         vehicle_state_bound.front.set(front_bound, front_center);
         vehicle_state_bound.rear.set(rear_bound, rear_center);
         vehicle_state_bound.center.set(center_bound, state);
-        if (isEqual(front_bound[0], front_bound[1]) || isEqual(rear_bound[0], rear_bound[1])) {
-            LOG(INFO) << "Path is blocked at s: " << state.s;
-            blocked_bound_.reset(new VehicleStateBound(vehicle_state_bound));
-            break;
-        }
         bounds_.emplace_back(vehicle_state_bound);
-    }
-    if (reference_states_.size() != bounds_.size()) {
-        reference_states_.resize(bounds_.size());
     }
 }
 
@@ -300,14 +292,6 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
     auto diff_radius = FLAGS_car_width * 0.5 - search_radius;
     left_bound -= diff_radius;
     right_bound += diff_radius;
-    if (left_bound < right_bound) return {0.0, 0.0};
-    // Hard safety margin.
-    const auto space = left_bound - right_bound;
-    static const auto min_space = 0.2;
-    const auto max_safety_margin = std::max(0.0, (space - min_space) / 2.0);
-    const auto safety_margin = std::min(FLAGS_safety_margin, max_safety_margin);
-    left_bound -= safety_margin;
-    right_bound += safety_margin;
     return {left_bound, right_bound};
 }
 

@@ -59,7 +59,7 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
     solver_.settings()->setVerbosity(true);
     solver_.settings()->setPolish(false);
     solver_.settings()->setWarmStart(true);
-    solver_.settings()->setMaxIteration(1000);
+    // solver_.settings()->setMaxIteration(1000);
     solver_.settings()->setAbsoluteTolerance(2e-3);
     solver_.settings()->setRelativeTolerance(2e-3);
     // solver_.settings()->setAdaptiveRhoInterval(10);
@@ -298,11 +298,19 @@ void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
 }
 
 std::pair<double, double> BaseSolver::getSoftBounds(double lb, double ub, double safety_margin) const {
-    const auto clearance = ub - lb;
-    static const auto min_clearance = 0.1;
-    auto remain_clearance = std::max(min_clearance, clearance - 2 * safety_margin);
-    auto shrink = std::max(0.0, (clearance - remain_clearance) / 2.0);
-    return std::make_pair(lb + shrink, ub - shrink);
+    // const auto clearance = ub - lb;
+    // static const auto min_clearance = 0.1;
+    // auto remain_clearance = std::max(min_clearance, clearance - 2 * safety_margin);
+    // auto shrink = std::max(0.0, (clearance - remain_clearance) / 2.0);
+    // return std::make_pair(lb + shrink, ub - shrink);
+    lb += safety_margin;
+    ub -= safety_margin;
+    const double center = (lb + ub) * 0.5;
+    if (lb > ub) {
+        return std::make_pair(center - 0.1, center + 0.1);
+    } else {
+        return std::make_pair(lb, ub);
+    }
 }
 
 }
