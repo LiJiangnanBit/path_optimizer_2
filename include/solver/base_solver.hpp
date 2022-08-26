@@ -37,9 +37,11 @@ class BaseSolver {
 
     virtual bool updateProblemFormulationAndSolve(const std::vector<SlState> &input_path, std::vector<SlState> *optimized_path);
 
- private:
+ protected:
     // Set Matrices for osqp solver.
-    virtual void setCost(Eigen::SparseMatrix<double> *matrix_h) const;
+    virtual void setHessian(Eigen::SparseMatrix<double> *matrix_h) const;
+
+    virtual void setGradient(Eigen::VectorXd *gradient) const;
 
     virtual void setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
                                 Eigen::VectorXd *lower_bound,

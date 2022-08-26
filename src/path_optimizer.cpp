@@ -17,6 +17,7 @@
 #include "tools/Map.hpp"
 #include "tools/spline.h"
 #include "solver/base_solver.hpp"
+#include "solver/simplified_solver.hpp"
 #include "tinyspline_ros/tinysplinecpp.h"
 #include "reference_path_smoother/tension_smoother.hpp"
 
@@ -135,7 +136,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         input_state.k = ref_state.k;
         input_path.push_back(input_state);
     }
-    BaseSolver solver(*reference_path_, *vehicle_state_, input_path);
+    SimplifiedSolver solver(*reference_path_, *vehicle_state_, input_path);
     TimeRecorder time_recorder("Optimize Path Function");
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");

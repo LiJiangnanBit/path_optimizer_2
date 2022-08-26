@@ -45,6 +45,7 @@ add_library(${PROJECT_NAME}
         src/tools/Map.cpp
         src/tools/car_geometry.cpp
         src/solver/base_solver.cpp
+        src/solver/simplified_solver.cpp
         src/data_struct/date_struct.cpp
         src/data_struct/reference_path_impl.cpp
         src/data_struct/reference_path.cpp

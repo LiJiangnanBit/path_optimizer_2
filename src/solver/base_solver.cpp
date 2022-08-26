@@ -67,12 +67,12 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
     solver_.data()->setNumberOfVariables(vars_size_);
     solver_.data()->setNumberOfConstraints(cons_size_);
     // Allocate QP problem matrices and vectors.
-    gradient_ = Eigen::VectorXd::Zero(vars_size_);
+    setGradient(&gradient_);
     // Eigen::SparseMatrix<double> linearMatrix;
     // Eigen::VectorXd lowerBound;
     // Eigen::VectorXd upperBound;
     // Set Hessian matrix.
-    setCost(&hessian_);
+    setHessian(&hessian_);
     time_recorder.recordTime("Set constraints");
     // Set state transition matrix, constraint matrix and bound vector.
     setConstraints(
@@ -120,7 +120,7 @@ bool BaseSolver::updateProblemFormulationAndSolve(const std::vector<SlState> &in
     return true;
 }
 
-void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
+void BaseSolver::setHessian(Eigen::SparseMatrix<double> *matrix_h) const {
     TimeRecorder time_recorder("Set Cost");
     time_recorder.recordTime("set heassian");
     Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
@@ -149,6 +149,10 @@ void BaseSolver::setCost(Eigen::SparseMatrix<double> *matrix_h) const {
     *matrix_h = hessian.sparseView();
     time_recorder.recordTime("end");
     time_recorder.printTime();
+}
+
+void BaseSolver::setGradient(Eigen::VectorXd *gradient) const {
+    *gradient = Eigen::VectorXd::Zero(vars_size_);
 }
 
 void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
