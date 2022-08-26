@@ -62,6 +62,8 @@ bool BaseSolver::solve(std::vector<SlState> *optimized_path) {
     solver_.settings()->setMaxIteration(1000);
     solver_.settings()->setAbsoluteTolerance(2e-3);
     solver_.settings()->setRelativeTolerance(2e-3);
+    // solver_.settings()->setAdaptiveRhoInterval(10);
+    solver_.settings()->setAdaptiveRho(true);
     solver_.data()->setNumberOfVariables(vars_size_);
     solver_.data()->setNumberOfConstraints(cons_size_);
     // Allocate QP problem matrices and vectors.
@@ -167,9 +169,10 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     for (size_t i = 0; i < n_ - 1; ++i) {
         const auto &x = input_path_.at(i);
         const auto &x_next = input_path_.at(i+1);
+        const auto &x_ref = ref_states[i];
         Eigen::Matrix3d df_x(Eigen::Matrix3d::Zero());
-        df_x << -x.k * tan(x.d_heading), (1-x.k*x.l) / pow(cos(x.d_heading), 2), 0,
-                -x.k * x.k / cos(x.d_heading), (1-x.k*x.l) * x.k * tan(x.d_heading) / cos(x.d_heading), (1-x.k*x.l) / cos(x.d_heading),
+        df_x << -x_ref.k * tan(x.d_heading), (1-x_ref.k*x.l) / pow(cos(x.d_heading), 2), 0,
+                -x_ref.k * x.k / cos(x.d_heading), (1-x_ref.k*x.l) * x.k * tan(x.d_heading) / cos(x.d_heading), (1-x_ref.k*x.l) / cos(x.d_heading),
                 0, 0, 0;
         Eigen::Matrix<double, 3, 1> df_u;
         df_u << 0, 0, 1;
@@ -180,8 +183,8 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
         cons.block(3 * (i + 1), state_size_ + i, 3, 1) = B;
         Eigen::Matrix<double, 3, 1> f_x_u;
         const double u_input = (x_next.k - x.k) / ds;
-        f_x_u << (1-x.k*x.l) * tan(x.d_heading),
-                (1-x.k*x.l)*x.k / cos(x.d_heading) - ref_states[i].k,
+        f_x_u << (1-x_ref.k*x.l) * tan(x.d_heading),
+                (1-x_ref.k*x.l)*x.k / cos(x.d_heading) - x_ref.k,
                 u_input; // TODO: use dk directly.
         Eigen::Matrix<double, 3, 1> x_vec;
         x_vec << x.l, x.d_heading, x.k;
