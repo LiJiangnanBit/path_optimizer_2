@@ -36,6 +36,7 @@ public:
     // Only for visualization purpose.
 //    std::vector<std::tuple<State, double, double>> display_abnormal_bounds() const;
     const ReferencePath &getReferencePath() const;
+    const std::vector<SlState> &getIntermediatePath() const;
 
 private:
     // Core function.
@@ -54,6 +55,7 @@ private:
     std::shared_ptr<CollisionChecker> collision_checker_;
     std::shared_ptr<ReferencePath> reference_path_;
     std::shared_ptr<VehicleState> vehicle_state_;
+    std::vector<SlState> intermediate_path_;
 };
 }
 

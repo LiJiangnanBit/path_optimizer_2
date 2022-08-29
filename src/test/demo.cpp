@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
         markers.append(end_marker);
 
         // Calculate.
-        std::vector<PathOptimizationNS::SlState> result_path;
+        std::vector<PathOptimizationNS::SlState> result_path, intermediate_path;
         std::vector<PathOptimizationNS::State> smoothed_reference_path, result_path_by_boxes;
         std::vector<std::vector<double>> a_star_display(3);
         bool opt_ok = false;
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
             }
             if (opt_ok) {
                 std::cout << "ok!" << std::endl;
-
+                intermediate_path = path_optimizer.getIntermediatePath();
             }
         }
 
@@ -234,6 +234,17 @@ int main(int argc, char **argv) {
             result_marker.colors.emplace_back(path_color);
         }
         markers.append(result_marker);
+
+        visualization_msgs::Marker intermediate_path_marker =
+            markers.newLineStrip(0.5, "intermediate path", id++, ros_viz_tools::YELLOW, marker_frame_id);
+        for (size_t i = 0; i != intermediate_path.size(); ++i) {
+            geometry_msgs::Point p;
+            p.x = intermediate_path[i].x;
+            p.y = intermediate_path[i].y;
+            p.z = 1.0;
+            intermediate_path_marker.points.push_back(p);
+        }
+        markers.append(intermediate_path_marker);
 
         // Visualize result path.
         visualization_msgs::Marker result_boxes_marker =

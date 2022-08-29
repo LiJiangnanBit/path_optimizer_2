@@ -125,6 +125,7 @@ bool PathOptimizer::processReferencePath() {
 bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
     CHECK_NOTNULL(final_path);
     final_path->clear();
+    intermediate_path_.clear();
     // TODO: remove arg: iter_num.
     std::vector<SlState> input_path;
     for (const auto &ref_state : reference_path_->getReferenceStates()) {
@@ -140,7 +141,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
     TimeRecorder time_recorder("Optimize Path Function");
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");
-    if (!solver.solve(final_path)) {
+    if (!solver.solve(&intermediate_path_)) {
         LOG(ERROR) << "Pre solving failed!";
         reference_path_->logBoundsInfo();
         return false;
@@ -151,7 +152,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
     time_recorder.recordTime("Solving");
     // BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);
     // if (!post_solver.solve(final_path)) {
-    if (!solver.updateProblemFormulationAndSolve(*final_path, final_path)) {
+    if (!solver.updateProblemFormulationAndSolve(intermediate_path_, final_path)) {
         LOG(ERROR) << "Solving failed!";
         reference_path_->logBoundsInfo();
         return false;
@@ -163,5 +164,9 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
 
 const ReferencePath &PathOptimizer::getReferencePath() const {
     return *reference_path_;
+}
+
+const std::vector<SlState> &PathOptimizer::getIntermediatePath() const {
+    return intermediate_path_;
 }
 }
