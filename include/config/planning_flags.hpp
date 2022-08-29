@@ -88,4 +88,6 @@ DECLARE_bool(enable_dynamic_segmentation);
 DECLARE_double(precise_planning_length);
 
 DECLARE_bool(rough_constraints_far_away);
+
+DECLARE_double(rough_sampling_begin_s);
 #endif //PATH_OPTIMIZER_INCLUDE_PATH_OPTIMIZER_CONFIG_PLANNING_FLAGS_HPP_

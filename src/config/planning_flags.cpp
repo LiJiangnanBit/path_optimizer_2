@@ -112,4 +112,6 @@ DEFINE_bool(enable_dynamic_segmentation, true, "dense segmentation when the curv
 DEFINE_bool(rough_constraints_far_away, true, "Use rough collision constraints after some distance, controlled by precise_planning_length");
 
 DEFINE_double(precise_planning_length, 30.0, "More strict collision constraint.");
+
+DEFINE_double(rough_sampling_begin_s, 50.0, "make sampling interval larger after this s.");
 /////

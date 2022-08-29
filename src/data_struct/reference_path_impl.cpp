@@ -306,6 +306,7 @@ bool ReferencePathImpl::buildReferenceFromSpline(double delta_s_smaller, double 
     const double small_k = 0.08;
     double tmp_s = 0;
     while (tmp_s <= max_s_) {
+        double step = tmp_s > FLAGS_rough_sampling_begin_s ? delta_s_larger : delta_s_smaller;
         double x = (*x_s_)(tmp_s);
         double y = (*y_s_)(tmp_s);
         double h = getHeading(*x_s_, *y_s_, tmp_s);
@@ -315,8 +316,8 @@ bool ReferencePathImpl::buildReferenceFromSpline(double delta_s_smaller, double 
         if (FLAGS_enable_dynamic_segmentation) {
             double k_share = fabs(k) > large_k ? 1 :
                              fabs(k) < small_k ? 0 : (fabs(k) - small_k) / (large_k - small_k);
-            tmp_s += delta_s_larger - k_share * (delta_s_larger - delta_s_smaller);
-        } else tmp_s += delta_s_larger;
+            tmp_s += step - k_share * (0.5 * step);
+        } else tmp_s += step;
     }
     return true;
 }
