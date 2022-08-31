@@ -147,7 +147,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         return false;
     }
     time_recorder.recordTime("Update ref");
-    // reference_path_->updateBoundsOnInputStates(*grid_map_, *input_path);
+    reference_path_->updateBoundsOnInputStates(*grid_map_, intermediate_path_);
     // Solve.
     time_recorder.recordTime("Solving");
     // BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);

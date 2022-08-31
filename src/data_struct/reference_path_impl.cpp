@@ -122,11 +122,13 @@ void ReferencePathImpl::updateBoundsOnInputStates(const Map &map, std::vector<Sl
     }
     bounds_.clear();
     VehicleStateBound vehicle_state_bound;
+    const double front_circle_radius = 0.5 * FLAGS_car_width;
+    const double rear_circle_radius = 0.5 * sqrt(FLAGS_rear_length * FLAGS_rear_length + FLAGS_car_width * FLAGS_car_width);
     for (size_t i = 0; i < input_sl_states.size(); ++i) {
         const State& ref_state = reference_states_.at(i);
         const SlState& input_state = input_sl_states.at(i);
-        const double front_length_new = FLAGS_front_length - FLAGS_front_length * cos(input_state.d_heading);
-        const double rear_length_new = FLAGS_rear_length - FLAGS_rear_length * cos(input_state.d_heading);
+        const double front_length_new = FLAGS_front_length * cos(input_state.d_heading);
+        const double rear_length_new = FLAGS_rear_length * cos(input_state.d_heading);
         // Front and rear bounds.
         State front_center(ref_state.x + front_length_new * cos(ref_state.heading),
                            ref_state.y + front_length_new * sin(ref_state.heading),
@@ -150,27 +152,19 @@ void ReferencePathImpl::updateBoundsOnInputStates(const Map &map, std::vector<Sl
                                                                                    ref_state.s + FLAGS_rear_length);
         front_center_directional_projection.heading = rear_center_directional_projection.heading = ref_state.heading;
         // Calculate boundaries.
-        auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map);
+        auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map, front_circle_radius);
         auto offset = global2Local(front_center, front_center_directional_projection).y;
         front_bound[0] += offset;
         front_bound[1] += offset;
-        auto rear_bound = getClearanceWithDirectionStrict(rear_center_directional_projection, map);
+        auto rear_bound = getClearanceWithDirectionStrict(rear_center_directional_projection, map, rear_circle_radius);
         offset = global2Local(rear_center, rear_center_directional_projection).y;
         rear_bound[0] += offset;
         rear_bound[1] += offset;
-        auto center_bound = getClearanceWithDirectionStrict(ref_state, map);
+        auto center_bound = getClearanceWithDirectionStrict(ref_state, map, front_circle_radius);
         vehicle_state_bound.front.set(front_bound, front_center);
         vehicle_state_bound.rear.set(rear_bound, rear_center);
         vehicle_state_bound.center.set(center_bound, ref_state);
-        if (isEqual(front_bound[0], front_bound[1]) || isEqual(rear_bound[0], rear_bound[1])) {
-            LOG(INFO) << "Path is blocked at s: " << ref_state.s;
-            blocked_bound_.reset(new VehicleStateBound(vehicle_state_bound));
-            break;
-        }
         bounds_.emplace_back(vehicle_state_bound);
-    }
-    if (reference_states_.size() != bounds_.size()) {
-        reference_states_.resize(bounds_.size());
     }
 }
 
@@ -181,13 +175,15 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
     }
     bounds_.clear();
     VehicleStateBound vehicle_state_bound;
+    const double front_circle_radius = 0.5 * FLAGS_car_width;
+    const double rear_circle_radius = 0.5 * sqrt(FLAGS_rear_length * FLAGS_rear_length + FLAGS_car_width * FLAGS_car_width);
     for (const auto &state : reference_states_) {
         // Front and rear bounds.
         State front_center(state.x + FLAGS_front_length * cos(state.heading),
                            state.y + FLAGS_front_length * sin(state.heading),
                            state.heading);
-        State rear_center(state.x + FLAGS_rear_length * cos(state.heading),
-                          state.y + FLAGS_rear_length * sin(state.heading),
+        State rear_center(state.x + FLAGS_rear_length * 0.5 * cos(state.heading),
+                          state.y + FLAGS_rear_length * 0.5 * sin(state.heading),
                           state.heading);
         auto front_center_directional_projection = getDirectionalProjectionByNewton(*x_s_,
                                                                                     *y_s_,
@@ -205,15 +201,15 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
                                                                                    state.s + FLAGS_rear_length);
         front_center_directional_projection.heading = rear_center_directional_projection.heading = state.heading;
         // Calculate boundaries.
-        auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map);
+        auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map, front_circle_radius);
         auto offset = global2Local(front_center, front_center_directional_projection).y;
         front_bound[0] += offset;
         front_bound[1] += offset;
-        auto rear_bound = getClearanceWithDirectionStrict(rear_center_directional_projection, map);
+        auto rear_bound = getClearanceWithDirectionStrict(rear_center_directional_projection, map, rear_circle_radius);
         offset = global2Local(rear_center, rear_center_directional_projection).y;
         rear_bound[0] += offset;
         rear_bound[1] += offset;
-        auto center_bound = getClearanceWithDirectionStrict(state, map);
+        auto center_bound = getClearanceWithDirectionStrict(state, map, front_circle_radius);
         vehicle_state_bound.front.set(front_bound, front_center);
         vehicle_state_bound.rear.set(rear_bound, rear_center);
         vehicle_state_bound.center.set(center_bound, state);
@@ -222,7 +218,8 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
 }
 
 std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const PathOptimizationNS::State &state,
-                                                                       const PathOptimizationNS::Map &map) {
+                                                                       const PathOptimizationNS::Map &map,
+                                                                       double radius) {
     // TODO: too much repeated code!
     double left_bound = 0;
     double right_bound = 0;
@@ -289,7 +286,7 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
             break;
         }
     }
-    auto diff_radius = FLAGS_car_width * 0.5 - search_radius;
+    auto diff_radius = radius - search_radius;
     left_bound -= diff_radius;
     right_bound += diff_radius;
     return {left_bound, right_bound};

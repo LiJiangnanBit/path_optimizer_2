@@ -50,7 +50,8 @@ class ReferencePathImpl {
 
  private:
     std::vector<double> getClearanceWithDirectionStrict(const PathOptimizationNS::State &state,
-                                                        const PathOptimizationNS::Map &map);
+                                                        const PathOptimizationNS::Map &map,
+                                                        double radius);
     State getApproxState(const State &original_state, const State &actual_state, double len) const;
     // Reference path spline representation.
     std::shared_ptr<tk::spline> x_s_;

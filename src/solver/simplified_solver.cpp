@@ -35,9 +35,9 @@ void SimplifiedSolver::setHessian(Eigen::SparseMatrix<double> *matrix_h) const {
     CHECK_NOTNULL(matrix_h);
     Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
     const double weight_l = 0.0;
-    const double weight_kappa = 20.0;
-    const double weight_dkappa = 200.0;
-    const double weight_slack = 10;
+    const double weight_kappa = 1.0;
+    const double weight_dkappa = 80.0;
+    const double weight_slack = 10.0;
     Eigen::Matrix2d dkappa_coeff;
     dkappa_coeff << 1, -1, -1, 1;
     for (size_t i = 0; i < n_; ++i) {
@@ -104,7 +104,7 @@ void SimplifiedSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constr
     }
     // Collision.
     Eigen::Matrix<double, 2, 2> collision_coeff;
-    collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length;
+    collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length * 0.5;
     Eigen::Matrix<double, 2, 2> slack_coeff;
     slack_coeff << 1, 0, 0, 1;
     for (size_t i = 0; i < n_; ++i) {
@@ -164,11 +164,11 @@ void SimplifiedSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constr
     (*upper_bound)(end_state_idx) = 1.0; //OsqpEigen::INFTY;
     (*lower_bound)(end_state_idx + 1) = -OsqpEigen::INFTY;
     (*upper_bound)(end_state_idx + 1) = OsqpEigen::INFTY;
-    if (FLAGS_constraint_end_heading && reference_path_.isBlocked() == nullptr) {
+    if (FLAGS_constraint_end_heading) {
         double end_psi = constrainAngle(vehicle_state_.getTargetState().heading - ref_states.back().heading);
         if (end_psi < 70 * M_PI / 180) {
-            (*lower_bound)(end_state_idx + 1) = end_psi - 0.087; // 5 degree.
-            (*upper_bound)(end_state_idx + 1) = end_psi + 0.087;
+            (*lower_bound)(end_state_idx + 1) = end_psi - M_PI / 6.0; // 5 degree.
+            (*upper_bound)(end_state_idx + 1) = end_psi + M_PI / 6.0;
         }
     }
 }

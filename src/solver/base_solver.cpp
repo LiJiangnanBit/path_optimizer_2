@@ -200,7 +200,7 @@ void BaseSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
     }
     // Collision.
     Eigen::Matrix<double, 2, 2> collision_coeff;
-    collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length;
+    collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length * 0.5;
     Eigen::Matrix<double, 2, 2> slack_coeff;
     slack_coeff << 1, 0, 0, 1;
     for (size_t i = 0; i < n_; ++i) {
