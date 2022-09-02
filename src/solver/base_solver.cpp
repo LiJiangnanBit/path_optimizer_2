@@ -297,7 +297,7 @@ void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
     }
 }
 
-std::pair<double, double> BaseSolver::getSoftBounds(double lb, double ub, double safety_margin) const {
+std::pair<double, double> BaseSolver::getSoftBounds(double lb, double ub, double safety_margin) {
     // const auto clearance = ub - lb;
     // static const auto min_clearance = 0.1;
     // auto remain_clearance = std::max(min_clearance, clearance - 2 * safety_margin);

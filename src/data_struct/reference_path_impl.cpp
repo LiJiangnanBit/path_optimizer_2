@@ -128,7 +128,7 @@ void ReferencePathImpl::updateBoundsOnInputStates(const Map &map, std::vector<Sl
         const State& ref_state = reference_states_.at(i);
         const SlState& input_state = input_sl_states.at(i);
         const double front_length_new = FLAGS_front_length * cos(input_state.d_heading);
-        const double rear_length_new = FLAGS_rear_length * cos(input_state.d_heading);
+        const double rear_length_new = FLAGS_rear_length * 0.5 * cos(input_state.d_heading);
         // Front and rear bounds.
         State front_center(ref_state.x + front_length_new * cos(ref_state.heading),
                            ref_state.y + front_length_new * sin(ref_state.heading),

@@ -37,6 +37,8 @@ class BaseSolver {
 
     virtual bool updateProblemFormulationAndSolve(const std::vector<SlState> &input_path, std::vector<SlState> *optimized_path);
 
+    static std::pair<double, double> getSoftBounds(double lb, double ub, double safety_margin);
+
  protected:
     // Set Matrices for osqp solver.
     virtual void setHessian(Eigen::SparseMatrix<double> *matrix_h) const;
@@ -48,7 +50,7 @@ class BaseSolver {
                                 Eigen::VectorXd *upper_bound) const;
     virtual void getOptimizedPath(const Eigen::VectorXd &optimization_result,
                                   std::vector<SlState> *optimized_path) const;
-    std::pair<double, double> getSoftBounds(double lb, double ub, double safety_margin) const;
+    
  protected:
     // Num of knots.
     const size_t n_{};
