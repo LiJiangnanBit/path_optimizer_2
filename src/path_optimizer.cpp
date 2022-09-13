@@ -138,7 +138,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         input_state.k = ref_state.k;
         input_path.push_back(input_state);
     }
-    FrenetConstraintSolver solver(*reference_path_, *vehicle_state_, input_path);
+    BaseSolver solver(*reference_path_, *vehicle_state_, input_path);
     TimeRecorder time_recorder("Optimize Path Function");
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");
@@ -148,17 +148,17 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         return false;
     }
     *final_path = intermediate_path_;
-    // time_recorder.recordTime("Update ref");
-    // reference_path_->updateBoundsOnInputStatesFrenet(*grid_map_, intermediate_path_);
-    // // Solve.
-    // time_recorder.recordTime("Solving");
-    // // BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);
-    // // if (!post_solver.solve(final_path)) {
-    // if (!solver.updateProblemFormulationAndSolve(intermediate_path_, final_path)) {
-    //     LOG(ERROR) << "Solving failed!";
-    //     reference_path_->logBoundsInfo();
-    //     return false;
-    // }
+    time_recorder.recordTime("Update ref");
+    reference_path_->updateBoundsOnInputStatesFrenet(*grid_map_, intermediate_path_);
+    // Solve.
+    time_recorder.recordTime("Solving");
+    // BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);
+    // if (!post_solver.solve(final_path)) {
+    if (!solver.updateProblemFormulationAndSolve(intermediate_path_, final_path)) {
+        LOG(ERROR) << "Solving failed!";
+        reference_path_->logBoundsInfo();
+        return false;
+    }
     time_recorder.recordTime("end");
     time_recorder.printTime();
     return true;

@@ -1,6 +1,5 @@
 #include "solver/frenet_constraint_solver.hpp"
 #include "data_struct/reference_path.hpp"
-#include "data_struct/data_struct.hpp"
 #include "config/planning_flags.hpp"
 #include "data_struct/vehicle_state_frenet.hpp"
 #include "tools/tools.hpp"
@@ -10,6 +9,22 @@ namespace PathOptimizationNS {
 FrenetConstraintSolver::FrenetConstraintSolver(const ReferencePath &reference_path,
                const VehicleState &vehicle_state,
                const std::vector<SlState> &input_path) : SimplifiedSolver(reference_path, vehicle_state, input_path) {}
+
+double FrenetConstraintSolver::calculate_l_collision_coeff(const State& ref_state, const SlState& input_state, const VehicleStateBound::SingleBound& bound) const {
+    double ds = bound.s - ref_state.s;
+    return 1 - ref_state.k * ds * tan(input_state.d_heading);
+}
+double FrenetConstraintSolver::calculate_dheading_collision_coeff(const State& ref_state, const SlState& input_state, const VehicleStateBound::SingleBound& bound) const {
+    double ds = bound.s - ref_state.s;
+    return (1-ref_state.k*input_state.l) * ds / pow(cos(input_state.d_heading), 2);
+}
+double FrenetConstraintSolver::calculate_constrant_item(const State& ref_state, const SlState& input_state, const VehicleStateBound::SingleBound& bound) const {
+    double ds = bound.s - ref_state.s;
+    return (1-ref_state.k*input_state.l) * tan(input_state.d_heading) * ds
+        + ref_state.k * ds * tan(input_state.d_heading) * input_state.l
+        - (1-ref_state.k*input_state.l) * ds * input_state.d_heading / pow(cos(input_state.d_heading), 2);
+}
+
 
 void FrenetConstraintSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_constraints,
                                 Eigen::VectorXd *lower_bound,
@@ -52,39 +67,29 @@ void FrenetConstraintSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_
         cons(kappa_idx + i, state_size_ + i) = 1;
     }
     // Collision.
-    const double small_kappa_threshold = 0.01;
     Eigen::Matrix<double, 2, 2> slack_coeff;
     slack_coeff << 1, 0, 0, 1;
     std::vector<std::pair<double, double>> constant_part_list;
-    const double new_rear_length = FLAGS_rear_length * 0.5;
     for (size_t i = 0; i < n_; ++i) {
+        const auto& ref_state = ref_states[i];
+        const auto& input_state = input_path_[i];
+        const auto& bound = reference_path_.getBounds().at(i);
         if (i < precise_planning_size_) {
             Eigen::Matrix<double, 2, 2> collision_coeff;
-            if (ref_states[i].k < small_kappa_threshold) {
-                // Consider ref to be straght.
-                // TODO: not finished!
-                collision_coeff << 1, FLAGS_front_length, 1, new_rear_length;
-                constant_part_list.emplace_back(std::pair<double, double>{0.0, 0.0});
-            } else {
-                double r_ref = 1 / ref_states[i].k;
-                double c_f = sqrt(pow(r_ref + input_path_[i].l ,2) + pow(FLAGS_front_length, 2)
-                    + 2 * (r_ref + input_path_[i].l) * FLAGS_front_length * sin(input_path_[i].heading));
-                double dfl_f = (r_ref + input_path_[i].l + FLAGS_front_length * sin(input_path_[i].heading)) / c_f;
-                double dfh_f = ((r_ref + input_path_[i].l) * FLAGS_front_length * cos(input_path_[i].heading)) / c_f;
-                double c_r = sqrt(pow(r_ref + input_path_[i].l ,2) + pow(new_rear_length, 2)
-                    + 2 * (r_ref + input_path_[i].l) * new_rear_length * sin(input_path_[i].heading));
-                double dfl_r = (r_ref + input_path_[i].l + new_rear_length * sin(input_path_[i].heading)) / c_r;
-                double dfh_r = ((r_ref + input_path_[i].l) * new_rear_length * cos(input_path_[i].heading)) / c_r;
-                collision_coeff << dfl_f, dfh_f, dfl_r, dfh_r;
-                constant_part_list.emplace_back(std::pair<double, double>{
-                                                c_f - r_ref - input_path_[i].l * dfl_f - input_path_[i].heading * dfh_f,
-                                                c_r - r_ref - input_path_[i].l * dfl_r - input_path_[i].heading * dfh_r});
-            }
-            cons.block(precise_collision_idx + 2 * i, 3 * i, 2, 2) = collision_coeff;
+            // collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length * 0.5;
+            // constant_part_list.push_back(std::pair<double,double>(0.0, 0.0));
+            collision_coeff <<
+                calculate_l_collision_coeff(ref_state, input_state, bound.front), calculate_dheading_collision_coeff(ref_state, input_state, bound.front),
+                calculate_l_collision_coeff(ref_state, input_state, bound.rear), calculate_dheading_collision_coeff(ref_state, input_state, bound.rear);
+            // std::cout << "i---------" << std::endl;
+            // std::cout << collision_coeff << std::endl;
+            constant_part_list.push_back(std::pair<double, double>(calculate_constrant_item(ref_state, input_state, bound.front), calculate_constrant_item(ref_state, input_state, bound.rear)));            
+            
+            cons.block(precise_collision_idx + 2 * i, 2 * i, 2, 2) = collision_coeff;
             cons.block(precise_collision_idx + 2 * i, state_size_ + control_size_ + 2 * i, 2, 2) = slack_coeff;
         } else {
             size_t local_index = i - precise_planning_size_;
-            cons(rough_collision_idx + local_index, 3 * i) = 1;
+            cons(rough_collision_idx + local_index, 2 * i) = 1;
             cons(rough_collision_idx + local_index, state_size_ + control_size_ + 2 * precise_planning_size_ + local_index) = 1;
         }
     }
