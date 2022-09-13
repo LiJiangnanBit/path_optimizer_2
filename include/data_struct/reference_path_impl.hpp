@@ -43,6 +43,9 @@ class ReferencePathImpl {
     void updateBoundsOnInputStates(const Map &map, std::vector<SlState> &input_sl_states);
     // Calculate upper and lower bounds for each covering circle.
     void updateBoundsImproved(const Map &map);
+    void updateBoundsOnInputStatesFrenet(const Map &map, std::vector<SlState> &input_sl_states);
+    // Calculate upper and lower bounds for each covering circle.
+    void updateBoundsImprovedFrenet(const Map &map);
     // Calculate reference_states_ from x_s_ and y_s_, given delta s.
     bool buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger);
     bool buildReferenceFromStates(const std::vector<State> &states);

@@ -41,6 +41,8 @@ class ReferencePath {
     bool buildReferenceFromStates(const std::vector<PathOptimizationNS::State> &states);
     std::shared_ptr<VehicleStateBound> isBlocked() const;
     void updateBoundsOnInputStates(const Map &map, std::vector<SlState> &input_sl_states);
+    void updateBoundsOnInputStatesFrenet(const Map &map, std::vector<SlState> &input_sl_states);
+    void updateBoundsFrenet(const Map &map);
  private:
     std::shared_ptr<ReferencePathImpl> reference_path_impl_;
 };

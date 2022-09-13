@@ -18,6 +18,7 @@
 #include "tools/spline.h"
 #include "solver/base_solver.hpp"
 #include "solver/simplified_solver.hpp"
+#include "solver/frenet_constraint_solver.hpp"
 #include "tinyspline_ros/tinysplinecpp.h"
 #include "reference_path_smoother/tension_smoother.hpp"
 
@@ -117,8 +118,8 @@ bool PathOptimizer::processReferencePath() {
     }
     setReferencePathLength();
 
-    reference_path_->buildReferenceFromSpline(2.0, 2.0);
-    reference_path_->updateBounds(*grid_map_);
+    reference_path_->buildReferenceFromSpline(0.3, 0.5);
+    reference_path_->updateBoundsFrenet(*grid_map_);
     return true;
 }
 
@@ -137,7 +138,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         input_state.k = ref_state.k;
         input_path.push_back(input_state);
     }
-    SimplifiedSolver solver(*reference_path_, *vehicle_state_, input_path);
+    FrenetConstraintSolver solver(*reference_path_, *vehicle_state_, input_path);
     TimeRecorder time_recorder("Optimize Path Function");
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");
@@ -148,7 +149,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
     }
     *final_path = intermediate_path_;
     // time_recorder.recordTime("Update ref");
-    // reference_path_->updateBoundsOnInputStates(*grid_map_, intermediate_path_);
+    // reference_path_->updateBoundsOnInputStatesFrenet(*grid_map_, intermediate_path_);
     // // Solve.
     // time_recorder.recordTime("Solving");
     // // BaseSolver post_solver(*reference_path_, *vehicle_state_, *final_path);

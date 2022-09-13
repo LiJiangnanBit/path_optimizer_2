@@ -217,6 +217,89 @@ void ReferencePathImpl::updateBoundsImproved(const PathOptimizationNS::Map &map)
     }
 }
 
+void ReferencePathImpl::updateBoundsOnInputStatesFrenet(const Map &map, std::vector<SlState> &input_sl_states) {
+    CHECK_LE(input_sl_states.size(), reference_states_.size());
+    if (reference_states_.empty()) {
+        LOG(WARNING) << "Empty reference, updateBounds fail!";
+        return;
+    }
+    bounds_.clear();
+    VehicleStateBound vehicle_state_bound;
+    const double front_circle_radius = 0.5 * FLAGS_car_width;
+    const double rear_circle_radius = 0.5 * sqrt(FLAGS_rear_length * FLAGS_rear_length + FLAGS_car_width * FLAGS_car_width);
+    for (size_t i = 0; i < input_sl_states.size(); ++i) {
+        const State& ref_state = reference_states_.at(i);
+        const SlState& input_state = input_sl_states.at(i);
+        // Front and rear bounds.
+        State front_center(input_state.x + FLAGS_front_length * cos(input_state.heading),
+                           input_state.y + FLAGS_front_length * sin(input_state.heading),
+                           input_state.heading);
+        State rear_center(input_state.x + FLAGS_rear_length * 0.5 * cos(input_state.heading),
+                          input_state.y + FLAGS_rear_length * 0.5 * sin(input_state.heading),
+                          input_state.heading);
+        auto front_center_projection = getProjectionByNewton(*x_s_,
+                                                            *y_s_,
+                                                            front_center.x,
+                                                            front_center.y,
+                                                            ref_state.s + 5.0,
+                                                            ref_state.s + FLAGS_front_length);
+        auto rear_center_projection = getProjectionByNewton(*x_s_,
+                                                            *y_s_,
+                                                            rear_center.x,
+                                                            rear_center.y,
+                                                            ref_state.s + 5.0,
+                                                            ref_state.s + FLAGS_rear_length);
+        // Calculate boundaries.
+        auto front_bound = getClearanceWithDirectionStrict(front_center_projection, map, front_circle_radius);
+        auto rear_bound = getClearanceWithDirectionStrict(rear_center_projection, map, rear_circle_radius);
+        auto center_bound = getClearanceWithDirectionStrict(ref_state, map, front_circle_radius);
+        vehicle_state_bound.front.set(front_bound, front_center_projection);
+        vehicle_state_bound.rear.set(rear_bound, rear_center_projection);
+        vehicle_state_bound.center.set(center_bound, ref_state);
+        bounds_.emplace_back(vehicle_state_bound);
+    }
+}
+
+void ReferencePathImpl::updateBoundsImprovedFrenet(const PathOptimizationNS::Map &map) {
+    if (reference_states_.empty()) {
+        LOG(WARNING) << "Empty reference, updateBounds fail!";
+        return;
+    }
+    bounds_.clear();
+    VehicleStateBound vehicle_state_bound;
+    const double front_circle_radius = 0.5 * FLAGS_car_width;
+    const double rear_circle_radius = 0.5 * sqrt(FLAGS_rear_length * FLAGS_rear_length + FLAGS_car_width * FLAGS_car_width);
+    for (const auto &state : reference_states_) {
+        // Front and rear bounds.
+        State front_center(state.x + FLAGS_front_length * cos(state.heading),
+                           state.y + FLAGS_front_length * sin(state.heading),
+                           state.heading);
+        State rear_center(state.x + FLAGS_rear_length * 0.5 * cos(state.heading),
+                          state.y + FLAGS_rear_length * 0.5 * sin(state.heading),
+                          state.heading);
+        auto front_center_directional_projection = getProjectionByNewton(*x_s_,
+                                                                        *y_s_,
+                                                                        front_center.x,
+                                                                        front_center.y,
+                                                                        state.s + 5.0,
+                                                                        state.s + FLAGS_front_length);
+        auto rear_center_directional_projection = getProjectionByNewton(*x_s_,
+                                                                        *y_s_,
+                                                                        rear_center.x,
+                                                                        rear_center.y,
+                                                                        state.s + 5.0,
+                                                                        state.s + FLAGS_rear_length);
+        // Calculate boundaries.
+        auto front_bound = getClearanceWithDirectionStrict(front_center_directional_projection, map, front_circle_radius);
+        auto rear_bound = getClearanceWithDirectionStrict(rear_center_directional_projection, map, rear_circle_radius);
+        auto center_bound = getClearanceWithDirectionStrict(state, map, front_circle_radius);
+        vehicle_state_bound.front.set(front_bound, front_center_directional_projection);
+        vehicle_state_bound.rear.set(rear_bound, rear_center_directional_projection);
+        vehicle_state_bound.center.set(center_bound, state);
+        bounds_.emplace_back(vehicle_state_bound);
+    }
+}
+
 std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const PathOptimizationNS::State &state,
                                                                        const PathOptimizationNS::Map &map,
                                                                        double radius) {

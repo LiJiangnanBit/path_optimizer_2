@@ -236,6 +236,17 @@ int main(int argc, char **argv) {
         }
         markers.append(result_marker);
 
+        visualization_msgs::Marker front_marker =
+            markers.newSphereList(0.1, "front point", id++, ros_viz_tools::MAGENTA, marker_frame_id);
+        for (size_t i = 0; i != result_path.size(); ++i) {
+            geometry_msgs::Point p;
+            p.x = result_path[i].x + FLAGS_front_length * cos(result_path[i].heading);
+            p.y = result_path[i].y + FLAGS_front_length * sin(result_path[i].heading);
+            p.z = 1.0;
+            front_marker.points.push_back(p);
+        }
+        markers.append(front_marker);
+
         visualization_msgs::Marker rear_marker =
             markers.newSphereList(0.1, "rear point", id++, ros_viz_tools::YELLOW, marker_frame_id);
         for (size_t i = 0; i != result_path.size(); ++i) {
@@ -381,6 +392,24 @@ int main(int argc, char **argv) {
             rear_bounds_marker.points.emplace_back(p);
         }
         markers.append(rear_bounds_marker);
+
+        visualization_msgs::Marker front_soft_bounds_marker =
+            markers.newSphereList(0.1, "front soft bounds", id++, ros_viz_tools::GRAY, marker_frame_id);
+        for (const auto &bound : reference_path_opt.getBounds()) {
+            const auto &rear_bound = bound.front;
+            const auto soft_bound = PathOptimizationNS::BaseSolver::getSoftBounds(rear_bound.lb, rear_bound.ub, FLAGS_expected_safety_margin);
+            double lb = soft_bound.first;
+            double ub = soft_bound.second;
+            geometry_msgs::Point p;
+            p.x = rear_bound.x + lb * cos(rear_bound.heading + M_PI_2);
+            p.y = rear_bound.y + lb * sin(rear_bound.heading + M_PI_2);
+            p.z = 1.0;
+            front_soft_bounds_marker.points.emplace_back(p);
+            p.x = rear_bound.x + ub * cos(rear_bound.heading + M_PI_2);
+            p.y = rear_bound.y + ub * sin(rear_bound.heading + M_PI_2);
+            front_soft_bounds_marker.points.emplace_back(p);
+        }
+        markers.append(front_soft_bounds_marker);
 
         visualization_msgs::Marker rear_soft_bounds_marker =
             markers.newSphereList(0.1, "back soft bounds", id++, ros_viz_tools::BLACK, marker_frame_id);

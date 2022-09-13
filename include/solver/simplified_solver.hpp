@@ -15,7 +15,6 @@ public:
     ~SimplifiedSolver() = default;
 
 private:
-    private:
     // Set Matrices for osqp solver.
     void setHessian(Eigen::SparseMatrix<double> *matrix_h) const override;
 

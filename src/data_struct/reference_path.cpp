@@ -62,6 +62,10 @@ void ReferencePath::updateBounds(const Map &map) {
     reference_path_impl_->updateBoundsImproved(map);
 }
 
+void ReferencePath::updateBoundsFrenet(const Map &map) {
+    reference_path_impl_->updateBoundsImprovedFrenet(map);
+}
+
 bool ReferencePath::buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger) {
     return reference_path_impl_->buildReferenceFromSpline(delta_s_smaller, delta_s_larger);
 }
@@ -88,6 +92,10 @@ void ReferencePath::setOriginalSpline(const PathOptimizationNS::tk::spline &x_s,
 
 void ReferencePath::updateBoundsOnInputStates(const Map &map, std::vector<SlState> &input_sl_states) {
     reference_path_impl_->updateBoundsOnInputStates(map, input_sl_states);
+}
+
+void ReferencePath::updateBoundsOnInputStatesFrenet(const Map &map, std::vector<SlState> &input_sl_states) {
+    reference_path_impl_->updateBoundsOnInputStatesFrenet(map, input_sl_states);
 }
 
 }
