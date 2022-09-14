@@ -138,7 +138,7 @@ bool PathOptimizer::optimizePath(std::vector<SlState> *final_path) {
         input_state.k = ref_state.k;
         input_path.push_back(input_state);
     }
-    BaseSolver solver(*reference_path_, *vehicle_state_, input_path);
+    FrenetConstraintSolver solver(*reference_path_, *vehicle_state_, input_path);
     TimeRecorder time_recorder("Optimize Path Function");
     // Solve with soft collision constraints.
     time_recorder.recordTime("Pre solving");

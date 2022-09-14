@@ -37,7 +37,7 @@ void SimplifiedSolver::setHessian(Eigen::SparseMatrix<double> *matrix_h) const {
     const double weight_l = 0.0;
     const double weight_kappa = 1.0;
     const double weight_dkappa = 80.0;
-    const double weight_slack = 2e5;
+    const double weight_slack = 200;
     Eigen::Matrix2d dkappa_coeff;
     dkappa_coeff << 1, -1, -1, 1;
     for (size_t i = 0; i < n_; ++i) {

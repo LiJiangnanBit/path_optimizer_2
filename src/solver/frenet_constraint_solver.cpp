@@ -16,6 +16,7 @@ double FrenetConstraintSolver::calculate_l_collision_coeff(const State& ref_stat
 }
 double FrenetConstraintSolver::calculate_dheading_collision_coeff(const State& ref_state, const SlState& input_state, const VehicleStateBound::SingleBound& bound) const {
     double ds = bound.s - ref_state.s;
+    std::cout << "ds " << ds << ", ret " << (1-ref_state.k*input_state.l) * ds / pow(cos(input_state.d_heading), 2) << std::endl;
     return (1-ref_state.k*input_state.l) * ds / pow(cos(input_state.d_heading), 2);
 }
 double FrenetConstraintSolver::calculate_constrant_item(const State& ref_state, const SlState& input_state, const VehicleStateBound::SingleBound& bound) const {
@@ -78,12 +79,14 @@ void FrenetConstraintSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_
             Eigen::Matrix<double, 2, 2> collision_coeff;
             // collision_coeff << 1, FLAGS_front_length, 1, FLAGS_rear_length * 0.5;
             // constant_part_list.push_back(std::pair<double,double>(0.0, 0.0));
+            std::cout << "input l " << input_state.l << ", h " << input_state.d_heading << std::endl;
             collision_coeff <<
                 calculate_l_collision_coeff(ref_state, input_state, bound.front), calculate_dheading_collision_coeff(ref_state, input_state, bound.front),
                 calculate_l_collision_coeff(ref_state, input_state, bound.rear), calculate_dheading_collision_coeff(ref_state, input_state, bound.rear);
-            // std::cout << "i---------" << std::endl;
-            // std::cout << collision_coeff << std::endl;
             constant_part_list.push_back(std::pair<double, double>(calculate_constrant_item(ref_state, input_state, bound.front), calculate_constrant_item(ref_state, input_state, bound.rear)));            
+            std::cout << "i---------" << i << std::endl;
+            std::cout << collision_coeff << std::endl;
+            std::cout << "const " << constant_part_list.back().first << ", " << constant_part_list.back().second << std::endl;
             
             cons.block(precise_collision_idx + 2 * i, 2 * i, 2, 2) = collision_coeff;
             cons.block(precise_collision_idx + 2 * i, state_size_ + control_size_ + 2 * i, 2, 2) = slack_coeff;
@@ -128,6 +131,7 @@ void FrenetConstraintSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_
             (*upper_bound)(precise_collision_idx + 2 * i, 0) = front_bounds.second - constant_part_list[i].first;
             (*lower_bound)(precise_collision_idx + 2 * i + 1, 0) = rear_bounds.first - constant_part_list[i].second;
             (*upper_bound)(precise_collision_idx + 2 * i + 1, 0) = rear_bounds.second - constant_part_list[i].second;
+            LOG(INFO) << "i " << i << "front lb " << (*lower_bound)(precise_collision_idx + 2 * i, 0) << " ub " << (*upper_bound)(precise_collision_idx + 2 * i, 0);
         } else {
             const auto center_bounds = getSoftBounds(bounds[i].center.lb, bounds[i].center.ub, FLAGS_expected_safety_margin);
             size_t local_index = i - precise_planning_size_;
