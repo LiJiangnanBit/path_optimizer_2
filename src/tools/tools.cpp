@@ -120,7 +120,7 @@ State getProjectionByNewton(const tk::spline &xs,
     }
 
     cur_s = std::min(cur_s, max_s);
-    State ret{xs(cur_s), ys(cur_s), getHeading(xs, ys, cur_s)};
+    State ret{xs(cur_s), ys(cur_s), getHeading(xs, ys, cur_s), getCurvature(xs, ys, cur_s)};
     ret.s = cur_s;
     return ret;
 }
@@ -133,7 +133,7 @@ State getDirectionalProjection(const tk::spline &xs,
                                double max_s,
                                double start_s) {
     if (max_s <= start_s) {
-        return State{xs(start_s), ys(start_s), getHeading(xs, ys, start_s)};
+        return State{xs(start_s), ys(start_s), getHeading(xs, ys, start_s), getCurvature(xs, ys, start_s)};
     }
     static const double grid = 2.0;
     double tmp_s = start_s, min_dot_value_s = start_s;
@@ -183,7 +183,7 @@ State getDirectionalProjectionByNewton(const tk::spline &xs,
     }
 
     cur_s = std::min(cur_s, max_s);
-    State ret{xs(cur_s), ys(cur_s), getHeading(xs, ys, cur_s)};
+    State ret{xs(cur_s), ys(cur_s), getHeading(xs, ys, cur_s), getCurvature(xs, ys, cur_s)};
     ret.s = cur_s;
     return ret;
 }

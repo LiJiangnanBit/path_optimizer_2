@@ -86,10 +86,11 @@ struct VehicleStateBound {
             y = center.y;
             heading = center.heading;
             s = center.s;
+            k = center.k;
         }
         double ub{}; // left
         double lb{}; // right
-        double x{}, y{}, heading{}, s{};
+        double x{}, y{}, heading{}, s{}, k{};
     } front, rear, center;
 };
 
