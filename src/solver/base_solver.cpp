@@ -298,16 +298,12 @@ void BaseSolver::getOptimizedPath(const Eigen::VectorXd &optimization_result,
 }
 
 std::pair<double, double> BaseSolver::getSoftBounds(double lb, double ub, double safety_margin) {
-    // const auto clearance = ub - lb;
-    // static const auto min_clearance = 0.1;
-    // auto remain_clearance = std::max(min_clearance, clearance - 2 * safety_margin);
-    // auto shrink = std::max(0.0, (clearance - remain_clearance) / 2.0);
-    // return std::make_pair(lb + shrink, ub - shrink);
     lb += safety_margin;
     ub -= safety_margin;
     const double center = (lb + ub) * 0.5;
-    if (lb > ub) {
-        return std::make_pair(center - 0.1, center + 0.1);
+    const double min_half_space = 0.1;
+    if (lb > ub - 2 * min_half_space) {
+        return std::make_pair(center - min_half_space, center + min_half_space);
     } else {
         return std::make_pair(lb, ub);
     }
