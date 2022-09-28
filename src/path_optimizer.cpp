@@ -118,7 +118,7 @@ bool PathOptimizer::processReferencePath() {
     }
     setReferencePathLength();
 
-    reference_path_->buildReferenceFromSpline(0.3, 0.5);
+    reference_path_->buildReferenceFromSpline(FLAGS_output_spacing, FLAGS_output_spacing * 2);
     reference_path_->updateBoundsFrenet(*grid_map_);
     return true;
 }

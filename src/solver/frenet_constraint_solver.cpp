@@ -8,7 +8,9 @@ namespace PathOptimizationNS {
 
 FrenetConstraintSolver::FrenetConstraintSolver(const ReferencePath &reference_path,
                const VehicleState &vehicle_state,
-               const std::vector<SlState> &input_path) : SimplifiedSolver(reference_path, vehicle_state, input_path) {}
+               const std::vector<SlState> &input_path) : SimplifiedSolver(reference_path, vehicle_state, input_path) {
+    cons_size_ += n_ - 2;
+}
 
 double FrenetConstraintSolver::calculate_l_collision_coeff(const State& ref_state, const SlState& input_state, const VehicleStateBound::SingleBound& bound) const {
     double ds = bound.s - ref_state.s;
@@ -30,7 +32,8 @@ void FrenetConstraintSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_
     const auto &ref_states = reference_path_.getReferenceStates();
     const auto trans_idx = 0;
     const auto kappa_idx = trans_idx + 2 * n_;
-    const auto precise_collision_idx = kappa_idx + n_ - 1;
+    const auto dkappa_idx = kappa_idx + n_ - 1;
+    const auto precise_collision_idx = dkappa_idx + n_ - 2;
     const auto rough_collision_idx = precise_collision_idx + 2 * precise_planning_size_;
     const auto end_state_idx = rough_collision_idx + n_ - precise_planning_size_;
     Eigen::MatrixXd cons = Eigen::MatrixXd::Zero(cons_size_, vars_size_);
@@ -63,6 +66,11 @@ void FrenetConstraintSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_
     // Kappa.
     for (size_t i = 0; i < n_ - 1; ++i) {
         cons(kappa_idx + i, state_size_ + i) = 1;
+    }
+    // d kappa.
+    for (size_t i = 0; i < n_ - 2; ++i) {
+        cons(dkappa_idx + i, state_size_ + i) = -1;
+        cons(dkappa_idx + i, state_size_ + i + 1) = 1;
     }
     // Collision.
     Eigen::Matrix<double, 2, 2> slack_coeff;
@@ -163,6 +171,13 @@ void FrenetConstraintSolver::setConstraints(Eigen::SparseMatrix<double> *matrix_
     for (size_t i = 0; i < n_ - 1; ++i) {
         (*lower_bound)(kappa_idx + i) = -kappa_limit;
         (*upper_bound)(kappa_idx + i) = kappa_limit;
+    }
+    // d kappa.
+    const double dkappa_limit = 0.04;
+    for (size_t i = 0; i < n_ - 2; ++i) {
+        const double ds = input_path_[i+1].s - input_path_[i].s;
+        (*lower_bound)(dkappa_idx + i) = -dkappa_limit * ds;
+        (*upper_bound)(dkappa_idx + i) = dkappa_limit * ds;
     }
     // Collision.
     const auto &bounds = reference_path_.getBounds();

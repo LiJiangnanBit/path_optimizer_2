@@ -35,9 +35,9 @@ void SimplifiedSolver::setHessian(Eigen::SparseMatrix<double> *matrix_h) const {
     CHECK_NOTNULL(matrix_h);
     Eigen::MatrixXd hessian{Eigen::MatrixXd::Constant(vars_size_, vars_size_, 0)};
     const double weight_l = 0.0;
-    const double weight_kappa = 1.0;
-    const double weight_dkappa = 80.0;
-    const double weight_slack = 200;
+    const double weight_kappa = 20.0;
+    const double weight_dkappa = 50.0;
+    const double weight_slack = 100.0;
     Eigen::Matrix2d dkappa_coeff;
     dkappa_coeff << 1, -1, -1, 1;
     for (size_t i = 0; i < n_; ++i) {
@@ -196,6 +196,7 @@ void SimplifiedSolver::getOptimizedPath(const Eigen::VectorXd &optimization_resu
         if (i != 0) {
             tmp_s += sqrt(pow(result_pt.x - optimized_path->back().x, 2) + pow(result_pt.y - optimized_path->back().y, 2));
         }
+        result_pt.s = tmp_s;
         optimized_path->push_back(result_pt);
         // LOG(INFO) << "result values: " << optimization_result(3 * i) << ", " << optimization_result(3 * i + 1) << ", " << optimization_result(3 * i + 2) << ", " << optimization_result(3 * n_ + i);
         // LOG(INFO) << "idx " << i << " l diff with input " << result_pt.l - input_path_.at(i).l << ", input l " << input_path_.at(i).l << ", opt l" << result_pt.l;
@@ -203,6 +204,9 @@ void SimplifiedSolver::getOptimizedPath(const Eigen::VectorXd &optimization_resu
         // if (fabs(optimization_result(state_size_ + control_size_ + 2*i+1)) > 0.02) {
         //     LOG(INFO) << "LARGE LAMBDA";
         // }
+            // if (i > 0) {
+            //     LOG(INFO) << "idx " << i << "dk: " << (optimized_path->at(i).k - optimized_path->at(i-1).k) / (optimized_path->at(i).s - optimized_path->at(i-1).s);
+            // }
     }
 }
 

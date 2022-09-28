@@ -309,7 +309,7 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
     double delta_s = 0.3;
     double left_angle = constrainAngle(state.heading + M_PI_2);
     double right_angle = constrainAngle(state.heading - M_PI_2);
-    static auto search_radius = 0.5;
+    static auto search_radius = 0.6;
 
     auto n = static_cast<size_t >(6.0 / delta_s);
     // Check if the original position is collision free.
@@ -376,28 +376,45 @@ std::vector<double> ReferencePathImpl::getClearanceWithDirectionStrict(const Pat
 }
 
 bool ReferencePathImpl::buildReferenceFromSpline(double delta_s_smaller, double delta_s_larger) {
-    CHECK_LE(delta_s_smaller, delta_s_larger);
+    // CHECK_LE(delta_s_smaller, delta_s_larger);
+    // if (isEqual(max_s_, 0.0)) {
+    //     LOG(INFO) << "ref length is zero.";
+    //     return false;
+    // }
+    // reference_states_.clear();
+    // const double large_k = 0.2;
+    // const double small_k = 0.08;
+    // double tmp_s = 0;
+    // while (tmp_s <= max_s_) {
+    //     double step = tmp_s > FLAGS_rough_sampling_begin_s ? delta_s_larger : delta_s_smaller;
+    //     double x = (*x_s_)(tmp_s);
+    //     double y = (*y_s_)(tmp_s);
+    //     double h = getHeading(*x_s_, *y_s_, tmp_s);
+    //     double k = getCurvature(*x_s_, *y_s_, tmp_s);
+    //     reference_states_.emplace_back(x, y, h, k, tmp_s);
+    //     // Use k to decide delta s.
+    //     if (FLAGS_enable_dynamic_segmentation) {
+    //         double k_share = fabs(k) > large_k ? 1 :
+    //                          fabs(k) < small_k ? 0 : (fabs(k) - small_k) / (large_k - small_k);
+    //         tmp_s += step - k_share * (0.5 * step);
+    //     } else tmp_s += step;
+    // }
+    // return true;
     if (isEqual(max_s_, 0.0)) {
         LOG(INFO) << "ref length is zero.";
         return false;
     }
     reference_states_.clear();
-    const double large_k = 0.2;
-    const double small_k = 0.08;
+    const int max_pts = 170;
+    const double step = std::max(FLAGS_output_spacing, max_s_ / max_pts);
     double tmp_s = 0;
     while (tmp_s <= max_s_) {
-        double step = tmp_s > FLAGS_rough_sampling_begin_s ? delta_s_larger : delta_s_smaller;
         double x = (*x_s_)(tmp_s);
         double y = (*y_s_)(tmp_s);
         double h = getHeading(*x_s_, *y_s_, tmp_s);
         double k = getCurvature(*x_s_, *y_s_, tmp_s);
         reference_states_.emplace_back(x, y, h, k, tmp_s);
-        // Use k to decide delta s.
-        if (FLAGS_enable_dynamic_segmentation) {
-            double k_share = fabs(k) > large_k ? 1 :
-                             fabs(k) < small_k ? 0 : (fabs(k) - small_k) / (large_k - small_k);
-            tmp_s += step - k_share * (0.5 * step);
-        } else tmp_s += step;
+        tmp_s += step;
     }
     return true;
 }

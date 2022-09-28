@@ -170,7 +170,7 @@ bool ReferencePathSmoother::graphSearchDp(std::shared_ptr<PathOptimizationNS::Re
 
     std::vector<std::vector<DpPoint>> samples;
     samples.reserve(layers_s_list_.size());
-    static const double search_threshold = 0.7; FLAGS_car_width / 2.0 + 0.2;
+    static const double search_threshold = 0.8;
     // Sample nodes.
     for (int i = 0; i < layers_s_list_.size(); ++i) {
         samples.emplace_back(std::vector<DpPoint>());
