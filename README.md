@@ -1,4 +1,6 @@
 # path_optimizer_2
+# :bell: CHECK OUT THE NEWER VERSION [path_optimizer_ilqr](https://github.com/LiJiangnanBit/path_optimizer_ilqr)  
+
 ![](https://img.shields.io/badge/ROS-Kinetic-orange)  ![](https://img.shields.io/badge/ROS-Melodic-blue)     
 **This is a newer version of my path planning ROS package for autonomous driving vehicles 👉[path_optimizer](https://github.com/LiJiangnanBit/path_optimizer).**  
 ![haha.png](https://i.loli.net/2021/11/02/VQLH5eRFmTDcgBM.png)  
